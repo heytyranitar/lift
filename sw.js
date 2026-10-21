@@ -1,9 +1,10 @@
 // Bump this when you change any file so phones pick up the new version.
-const CACHE = 'lift-v4';
+const CACHE = 'lift-v5';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache, which could otherwise hand us the previous version's files.
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -32,7 +33,7 @@ self.addEventListener('fetch', e => {
   // App files: try the network briefly (so updates arrive), fall back to cache (gym with no signal).
   if (url.origin === self.location.origin) {
     e.respondWith(
-      withTimeout(fetch(req), 3000)
+      withTimeout(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }), 3000) // revalidate, never trust a stale HTTP-cached copy
         .then(res => {
           if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
           return res;

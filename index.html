@@ -415,6 +415,7 @@ document.addEventListener('change',ev=>{
   }
   save(); render();
 });
+window.liftBusy=()=>!!S.active;
 window.setVer=v=>{ VER=v; const el=$('#ver'); if(el) el.textContent=v; };
 render();
 })();
@@ -425,7 +426,9 @@ if('serviceWorker' in navigator){
   // ask the running service worker which version (cache name) it is
   const sw=navigator.serviceWorker, ask=()=>{ if(sw.controller) sw.controller.postMessage('version'); else window.setVer('not installed'); };
   sw.addEventListener('message',e=>{ if(e.data&&e.data.version) window.setVer(e.data.version); });
-  sw.addEventListener('controllerchange',ask);
+  // a new version took over: reload to show it, unless mid-workout (would drop the rest timer)
+  const hadSW=!!sw.controller;
+  sw.addEventListener('controllerchange',()=>{ ask(); if(hadSW&&!window.liftBusy()) location.reload(); });
   ask();
 }
 </script>
