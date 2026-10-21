@@ -71,6 +71,12 @@ button{cursor:pointer}
 .set{width:56px;height:56px;border-radius:50%;border:2px solid var(--line);background:transparent;font:700 24px/1 var(--head);color:var(--muted)}
 .set.done{background:var(--ok);border-color:var(--ok);color:var(--ok-ink,#fff)}
 .set.miss{background:var(--miss);border-color:var(--miss);color:#fff}
+.warm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.wset{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:44px;padding:5px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;font:600 15px/1.15 var(--body);font-variant-numeric:tabular-nums}
+.wset span{font-size:12px;font-weight:500;color:var(--muted)}
+.wset.done{background:var(--ok);border-color:var(--ok);color:var(--ok-ink,#fff)}
+.wset.done span{color:inherit;opacity:.85}
+.wset:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
 .tab{flex:1;border:0;background:transparent;padding:14px 4px;font:700 17px/1 var(--head);color:var(--muted)}
 .tab.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
@@ -269,12 +275,30 @@ function nextTarget(ex){
   return {weight:w,stage,reps,sets:ex.sets,fails};
 }
 
-function plateText(total,bar){
-  if(!bar||total<=bar) return '';
+function perSide(total,bar){
   let side=(total-bar)/2; const out=[];
   for(const p of [...S.settings.plates].sort((a,b)=>b-a)){ while(side>=p-1e-9){out.push(p);side-=p;} }
-  return 'Per side: '+(out.join(' + ')||'none')+(side>0.01?' (short '+fw(side)+')':'');
+  return {out,short:side>0.01?fw(side):0};
 }
+function plateText(total,bar){
+  if(!bar||total<=bar) return '';
+  const {out,short}=perSide(total,bar);
+  return 'Per side: '+(out.join(' + ')||'none')+(short?' (short '+short+')':'');
+}
+
+/* ---- warm-ups: empty bar 2x5, then ~40/60/80% of the work weight for 5/3/2 reps ---- */
+const warmMode=ex=>ex.warm||(ex.bar>0?'auto':'off');
+function warmups(ex,work){
+  if(warmMode(ex)==='off'||!(work>0)) return [];
+  const bar=ex.bar||0, out=[];
+  if(bar>0&&work>bar) out.push({w:bar,r:5},{w:bar,r:5});
+  for(const [pct,r] of [[.4,5],[.6,3],[.8,2]]){
+    const w=rnd(work*pct,5), last=out[out.length-1];
+    if(w>bar&&w<work&&(!last||w>last.w)) out.push({w,r});
+  }
+  return out;
+}
+const warmPlates=(w,bar)=>!bar?'':w<=bar?'bar only':perSide(w,bar).out.join('+')+' /side';
 
 /* ---- rest timer ---- */
 function startRest(){ R={end:Date.now()+S.settings.rest*1000,done:false,warned:false}; }
@@ -328,6 +352,10 @@ function vToday(){
   }
   return h;
 }
+function warmHtml(e,i,ex){
+  const ws=warmups(ex,e.weight); if(!ws.length) return '';
+  return `<div class="warm"><span class="muted">Warm-up</span>${ws.map((w,k)=>`<button class="wset ${e.wd&&e.wd[k]?'done':''}" data-a="wset" data-e="${i}" data-k="${k}" aria-label="Warm-up ${fw(w.w)} for ${w.r}">${fw(w.w)}×${w.r}${ex.bar?`<span>${esc(warmPlates(w.w,ex.bar))}</span>`:''}</button>`).join('')}</div>`;
+}
 function vActive(){
   const a=S.active, t=S.templates.find(x=>x.id===a.tid);
   let h=`<h1>${esc(t?t.name:'Workout')}</h1><div class="muted" style="margin:-6px 16px 14px;font-size:16px">Session time <b id="elapsed" style="font:700 20px/1 var(--head);color:var(--ink);font-variant-numeric:tabular-nums">${fmtClock(Date.now()-a.start)}</b></div>`;
@@ -338,7 +366,7 @@ function vActive(){
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
       <span class="unit">lb</span><button class="step" data-a="w" data-e="${i}" data-d="1" aria-label="Increase weight">+</button></div>
-      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div><div class="sets">${circles}</div></div>`;
+      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
   });
   h+=`<div class="card"><label for="note" class="name" style="display:block;margin-bottom:6px">Notes</label>
       <textarea id="note" class="note" placeholder="How did it go?">${esc(a.note||'')}</textarea></div>`;
@@ -401,6 +429,8 @@ function vPlan(){
       h+= ex.rule==='double'?f('Rep steps','steps',ex.steps.join(','),'text'):f('Reps','reps',ex.reps);
       h+=f('Increment (lb)','inc',ex.inc);
       h+=f('Bar weight (0 = no plates)','bar',ex.bar);
+      h+=`<div class="field"><label>Warm-up sets</label><select data-f="ex" data-id="${ex.id}" data-k="warm">
+        <option value="auto" ${warmMode(ex)==='auto'?'selected':''}>Auto (bar, then 40/60/80%)</option><option value="off" ${warmMode(ex)==='off'?'selected':''}>Off</option></select></div>`;
       h+=f('Next weight','override',fw(n.weight));
       h+=`<button class="btn sm danger" data-a="exdel" data-id="${ex.id}" style="margin-top:6px">${ui.confirm==='ex'+ex.id?'Tap again to delete':'Delete exercise'}</button>`;
     }
@@ -453,6 +483,7 @@ document.addEventListener('click',ev=>{
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);
         return {exId:id,name:ex.name,weight:n.weight,nSets:n.sets,reps:n.reps,stage:n.stage,sets:Array(n.sets).fill(null)};}).filter(Boolean)};
       ui.toast=''; ui.toastSync=ui.toastShare=false; break; }
+    case 'wset': { const e=S.active.entries[+d.e]; e.wd=e.wd||[]; e.wd[+d.k]=!e.wd[+d.k]; break; }
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
       e.sets[j]=cur==null?e.reps:(cur>0?cur-1:null);
@@ -466,6 +497,7 @@ document.addEventListener('click',ev=>{
     case 'finish': {
       const a=S.active, t=S.templates.find(x=>x.id===a.tid);
       const entries=a.entries.filter(e=>e.sets.some(v=>v!=null));
+      entries.forEach(e=>delete e.wd); // warm-ups aren't part of the log
       if(entries.length){
         const dur=Date.now()-a.start;
         const sess={id:uid(),date:Date.now(),start:a.start,dur,tid:a.tid,name:t?t.name:'Workout',entries};
@@ -519,6 +551,7 @@ document.addEventListener('change',ev=>{
       const ex=getEx(d.id), k=d.k; if(!ex) break;
       if(k==='name') ex.name=v.trim()||ex.name;
       else if(k==='rule') ex.rule=v;
+      else if(k==='warm') ex.warm=v;
       else if(k==='steps'){ const s=v.split(',').map(x=>parseInt(x,10)).filter(x=>x>0); if(s.length) ex.steps=s; }
       else if(k==='override'){ const n=parseFloat(v); if(!isNaN(n)&&n>=0) ex.override=n; }
       else { const n=parseFloat(v); if(!isNaN(n)&&n>=0) ex[k]=n; }
