@@ -133,6 +133,7 @@ applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
 const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null,imp:''};
+let VER=('serviceWorker' in navigator)?'checking…':'not installed';
 let R=null; // rest timer
 
 const getEx=id=>S.ex.find(e=>e.id===id);
@@ -309,7 +310,8 @@ function vData(){
     <button class="btn wide" data-a="copy" style="margin-top:8px">Copy backup</button></div>
   <div class="card"><div class="name">Import</div><p class="muted">Paste a backup here. This replaces everything currently in the app.</p>
     <textarea id="imp" placeholder="Paste backup text">${esc(ui.imp)}</textarea>
-    <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button></div>`;
+    <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button></div>
+  <p class="muted" style="text-align:center">App version <span id="ver">${esc(VER)}</span></p>`;
 }
 function render(){
   const v={today:vToday,hist:vHist,plan:vPlan,data:vData}[ui.tab]();
@@ -395,11 +397,19 @@ document.addEventListener('change',ev=>{
   }
   save(); render();
 });
+window.setVer=v=>{ VER=v; const el=$('#ver'); if(el) el.textContent=v; };
 render();
 })();
 </script>
 <script>
-if('serviceWorker' in navigator){ addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+if('serviceWorker' in navigator){
+  addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  // ask the running service worker which version (cache name) it is
+  const sw=navigator.serviceWorker, ask=()=>{ if(sw.controller) sw.controller.postMessage('version'); else window.setVer('not installed'); };
+  sw.addEventListener('message',e=>{ if(e.data&&e.data.version) window.setVer(e.data.version); });
+  sw.addEventListener('controllerchange',ask);
+  ask();
+}
 </script>
 </body>
 </html>
