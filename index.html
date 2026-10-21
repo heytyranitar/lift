@@ -31,6 +31,17 @@
   --bg:#121519;--surface:#1B2026;--ink:#E8EAE6;--muted:#97A0A9;--line:#2B323A;
   --accent:#6C93FF;--accent-ink:#0B1020;--ok:#4CC38A;--miss:#F0805F;--soft:#252B33;color-scheme:dark;
 }
+/* Prometheus (Hades II): charred stone, ember orange, molten gold */
+:root[data-theme="prometheus"]{
+  --bg:#150D09;--surface:#22150F;--ink:#F3E4C8;--muted:#B89D7E;--line:#43291A;
+  --accent:#FF7A1A;--accent-ink:#1A0B03;--ok:#E5A93A;--ok-ink:#1A0B03;--miss:#C8402B;--soft:#301D13;color-scheme:dark;
+  --head:"Cinzel","Barlow Condensed",Georgia,serif;
+}
+:root[data-theme="prometheus"] body{background:radial-gradient(120% 60% at 50% 110%,rgba(255,110,30,.16),transparent 70%) fixed,var(--bg)}
+:root[data-theme="prometheus"] .card{border-color:#5A341D;box-shadow:inset 0 1px 0 rgba(255,170,90,.06)}
+:root[data-theme="prometheus"] .btn.primary{background:linear-gradient(180deg,#FF8E2E,#E5600F);border-color:#FF8E2E}
+:root[data-theme="prometheus"] #rest{background:linear-gradient(90deg,#4A1E0A,#7A2E0C);color:var(--ink);border:1px solid #FF7A1A;box-shadow:0 0 18px rgba(255,110,30,.35)}
+:root[data-theme="prometheus"] #rest .btn{color:var(--ink);border-color:rgba(255,190,130,.4)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -58,7 +69,7 @@ button{cursor:pointer}
 .plates{min-height:20px;margin-bottom:10px}
 .sets{display:flex;flex-wrap:wrap;gap:10px}
 .set{width:56px;height:56px;border-radius:50%;border:2px solid var(--line);background:transparent;font:700 24px/1 var(--head);color:var(--muted)}
-.set.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.set.done{background:var(--ok);border-color:var(--ok);color:var(--ok-ink,#fff)}
 .set.miss{background:var(--miss);border-color:var(--miss);color:#fff}
 .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
 .tab{flex:1;border:0;background:transparent;padding:14px 4px;font:700 17px/1 var(--head);color:var(--muted)}
@@ -128,7 +139,14 @@ let S;
 try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }catch(e){ S=defaults(); }
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
-const applyTheme=()=>{ if(S.settings.theme) document.documentElement.setAttribute('data-theme',S.settings.theme); else document.documentElement.removeAttribute('data-theme'); };
+const applyTheme=()=>{
+  const t=S.settings.theme, root=document.documentElement;
+  if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
+  if(t==='prometheus'&&!$('#font-cinzel')){ const l=document.createElement('link'); l.id='font-cinzel'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap'; document.head.appendChild(l); }
+  // match the phone's status bar to the chosen theme
+  const bg=t&&getComputedStyle(root).getPropertyValue('--bg').trim();
+  document.querySelectorAll('meta[name=theme-color]').forEach(m=>{ if(!m.dataset.c) m.dataset.c=m.content; m.content=bg||m.dataset.c; });
+};
 applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
@@ -304,7 +322,7 @@ function vData(){
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option></select></div></div>
   <div class="card"><div class="name">Export</div><p class="muted">Copy this text somewhere safe. It holds your plan and every workout.</p>
     <textarea id="exp" readonly>${esc(JSON.stringify(S))}</textarea>
     <button class="btn wide" data-a="copy" style="margin-top:8px">Copy backup</button></div>
