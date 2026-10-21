@@ -132,7 +132,7 @@ const applyTheme=()=>{ if(S.settings.theme) document.documentElement.setAttribut
 applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
-const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null};
+const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null,imp:''};
 let R=null; // rest timer
 
 const getEx=id=>S.ex.find(e=>e.id===id);
@@ -308,7 +308,7 @@ function vData(){
     <textarea id="exp" readonly>${esc(JSON.stringify(S))}</textarea>
     <button class="btn wide" data-a="copy" style="margin-top:8px">Copy backup</button></div>
   <div class="card"><div class="name">Import</div><p class="muted">Paste a backup here. This replaces everything currently in the app.</p>
-    <textarea id="imp" placeholder="Paste backup text"></textarea>
+    <textarea id="imp" placeholder="Paste backup text">${esc(ui.imp)}</textarea>
     <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button></div>`;
 }
 function render(){
@@ -323,6 +323,7 @@ function swap(arr,i,j){ if(j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],a
 document.addEventListener('click',ev=>{
   const el=ev.target.closest('[data-a]'); if(!el) return;
   unlockAudio();
+  const imp=$('#imp'); if(imp) ui.imp=imp.value; // re-render below would wipe the pasted text
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
     case 'tab': ui.tab=d.tab; ui.toast=''; break;
@@ -365,7 +366,7 @@ document.addEventListener('click',ev=>{
       if(keep==='import'){
         try{ const o=JSON.parse($('#imp').value);
           if(!o||!Array.isArray(o.ex)||!Array.isArray(o.templates)||!Array.isArray(o.sessions)) throw 0;
-          S=o; S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{}); ui.toast='Backup imported.'; ui.tab='today';
+          S=o; S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{}); ui.toast='Backup imported.'; ui.tab='today'; ui.imp='';
         }catch(e){ ui.toast='That text is not a valid backup. Nothing was changed.'; ui.tab='today'; }
       } else ui.confirm='import';
       break;
