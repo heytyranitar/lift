@@ -87,8 +87,11 @@ test('warm-ups: one empty-bar set, none for deadlifts, off without a bar', async
   eq(await chips(1), ['45×5', '75×5', '110×3', '150×2'], 'squat 185');
   eq(await chips(2), ['45×5', '55×3', '75×2'], 'press 95');
   eq(await chips(3), ['90×5', '135×3', '180×2'], 'deadlift 225');
-  await p.click('[data-a=wset][data-e="0"][data-k="0"]');
-  ok(!(await p.isVisible('#rest')), 'warm-ups should not start the rest timer');
+  await p.click('[data-a=wset][data-e="0"][data-k="3"]'); // last chip first: the rest waits until every warm-up is done
+  for (const k of [0, 1]) await p.click(`[data-a=wset][data-e="0"][data-k="${k}"]`);
+  ok(!(await p.isVisible('#rest')), 'no rest timer until the last warm-up is done');
+  await p.click('[data-a=wset][data-e="0"][data-k="2"]');
+  ok(await p.isVisible('#rest'), 'finishing the warm-ups starts the rest timer');
   await p.click('[data-a=discard]'); await p.click('[data-a=discard]');
   await p.click('[data-a=start][data-t=C]');
   eq(await p.$$eval('.wset', w => w.length), 0, 'curls have no bar weight, so no warm-ups');

@@ -7,7 +7,7 @@ Everything is in `index.html` (markup, styles, app code) plus `sw.js` (offline s
 - **Workouts** from templates (A/B alternate as "Up next"), with a weight stepper, per-side plate list and tappable sets.
 - **Progression** recalculated from history every time: linear (add weight on success, 10% deload after 3 missed sessions at the same weight), double progression (climb rep steps, then add weight), or hold. Today shows when a deload is coming.
 - **Warm-ups** generated from the work weight: empty bar ×5, then about 40/60/80% for 5/3/2 reps. Exercises with "deadlift" in the name skip the empty bar. Per exercise: Auto or Off (default Auto when the exercise has a bar weight).
-- **Rest timer** that beeps 10 s before and at the end, keeps the screen on, survives the app being closed, and switches to a longer rest after a missed set.
+- **Rest timer** that starts after each work set and after the last warm-up, beeps 10 s before and at the end, keeps the screen on, survives the app being closed, and switches to a longer rest after a missed set.
 - **History** with a weight chart, heaviest weight and estimated 1RM (Epley), editable past workouts, and a note per workout. New PRs are called out when a workout is saved.
 - **Themes**: match device, light, dark, Sukuna, Gojo, Itachi, Ultra Instinct, Todoroki.
 

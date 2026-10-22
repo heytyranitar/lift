@@ -648,7 +648,12 @@ document.addEventListener('click',ev=>{
       ui.toast=''; ui.pr=''; ui.toastSync=ui.toastShare=false; break; }
     case 'hedit': ui.editSess=d.id; break;
     case 'hdone': ui.editSess=null; break;
-    case 'wset': { const e=S.active.entries[+d.e]; e.wd=e.wd||[]; e.wd[+d.k]=!e.wd[+d.k]; break; }
+    case 'wset': {
+      const e=S.active.entries[+d.e], k=+d.k, ex=getEx(e.exId); e.wd=e.wd||[]; e.wd[k]=!e.wd[k];
+      // ticking off the last warm-up starts the rest before the first work set
+      const n=ex?warmups(ex,e.weight).length:0;
+      if(e.wd[k]&&n&&e.wd.slice(0,n).filter(Boolean).length===n) startRest(false);
+      break; }
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
       const nv=cur==null?e.reps:(cur>0?cur-1:null); e.sets[j]=nv;
