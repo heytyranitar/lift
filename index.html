@@ -76,7 +76,7 @@
 :root[data-theme="gojo"] .btn.danger,:root[data-theme="gojo"] .trend{color:#B9A3FF}
 :root[data-theme="gojo"] #rest{background:#0A101E;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(92,200,255,.3)}
 :root[data-theme="gojo"] #rest .btn{color:var(--ink);border-color:rgba(92,200,255,.45)}
-/* Itachi (Naruto): charcoal, Sharingan crimson, Tsukuyomi's red moon, a scratched headband */
+/* Itachi (Naruto): charcoal, Sharingan crimson, Tsukuyomi's red moon */
 :root[data-theme="itachi"]{
   --bg:#0B0B0E;--surface:#141418;--ink:#EEEEF1;--muted:#9B9BA5;--line:#2B2B33;
   --accent:#D41F30;--accent-ink:#FFFFFF;--ok:#B5121F;--ok-ink:#FFFFFF;--miss:#4B4B55;--soft:#212127;color-scheme:dark;
@@ -91,8 +91,11 @@
 :root[data-theme="itachi"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(212,31,48,.9)}
 :root[data-theme="itachi"] .btn.primary{background:linear-gradient(180deg,#E0303F,#A8121F);border-color:#E0303F;box-shadow:0 0 14px rgba(212,31,48,.35)}
 :root[data-theme="itachi"] body::before{content:"\6731";position:fixed;right:-14px;bottom:44px;font:700 230px/1 var(--head);color:#D41F30;opacity:.05;pointer-events:none;z-index:-1}
-:root[data-theme="itachi"] h1::after{content:"";display:block;width:46px;height:14px;margin-top:8px;border-radius:2px;
-  background:linear-gradient(160deg,transparent calc(50% - 1px),var(--accent) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(#7E8089,#4E5058);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+:root[data-theme="itachi"] h1::after{content:"";display:block;width:86px;height:20px;margin-top:8px;filter:drop-shadow(0 0 4px rgba(212,31,48,.7));background:
+  radial-gradient(circle at 10px 4.5px,#0B0B0E 1.9px,transparent 2.3px),radial-gradient(circle at 5.25px 12.75px,#0B0B0E 1.9px,transparent 2.3px),radial-gradient(circle at 14.75px 12.75px,#0B0B0E 1.9px,transparent 2.3px),
+  radial-gradient(circle at 10px 10px,transparent 4.6px,rgba(0,0,0,.55) 5px 5.9px,transparent 6.3px),
+  radial-gradient(circle at 10px 10px,#E8323F 0 7.9px,#8E0F1A 8.5px 9.8px,transparent 10.2px),
+  linear-gradient(90deg,var(--accent),transparent) 27px 9.25px/59px 1.5px no-repeat}
 :root[data-theme="itachi"] .set.done{border-color:#E8323F;box-shadow:0 0 12px rgba(212,31,48,.45);
   background:radial-gradient(circle closest-side,transparent 0 calc(100% - 10px),rgba(0,0,0,.5) calc(100% - 10px) calc(100% - 8.5px),transparent calc(100% - 8.5px)),radial-gradient(circle at 50% 40%,#E8323F,#9E0F1B 72%)}
 :root[data-theme="itachi"] .btn.danger,:root[data-theme="itachi"] .trend{color:#F0606B}
