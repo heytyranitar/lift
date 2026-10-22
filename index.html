@@ -66,7 +66,14 @@ button{cursor:pointer}
 .wrow input:focus-visible,.btn:focus-visible,.set:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .step{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);font-size:22px;line-height:1}
 .unit{color:var(--muted);font-weight:600}
-.plates{min-height:20px;margin-bottom:10px}
+.plates{min-height:20px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.plates svg{flex:none}
+.trend{font-size:13px;color:var(--miss);margin-top:-2px}
+.pr{font-weight:700;margin-top:4px}
+.stats{margin-top:8px}
+.hrow input.mini{width:52px;min-height:36px;padding:4px;text-align:center}
+.hrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0}
+.hrow b{flex:1 1 100%;font-weight:600}
 .sets{display:flex;flex-wrap:wrap;gap:10px}
 .set{width:56px;height:56px;border-radius:50%;border:2px solid var(--line);background:transparent;font:700 24px/1 var(--head);color:var(--muted)}
 .set.done{background:var(--ok);border-color:var(--ok);color:var(--ok-ink,#fff)}
@@ -249,21 +256,23 @@ setTimeout(()=>syncGist(),1500);
 
 const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null,imp:''};
 let VER=('serviceWorker' in navigator)?'checking…':'not installed';
-let R=null; // rest timer
+let R=null; // rest timer, kept in S.active.rest so it survives the app being closed
+if(S.active&&S.active.rest){ R=S.active.rest; const left=R.end-Date.now(); if(left<=0) R.done=R.warned=true; else if(left<=10000) R.warned=true; }
 
 const getEx=id=>S.ex.find(e=>e.id===id);
 
 /* ---- progression: replay history to get the next target for an exercise ---- */
 function nextTarget(ex){
-  let w=ex.start,stage=ex.stage0||0,fails=0;
+  let w=ex.start,stage=ex.stage0||0,fails=0,deloaded=false;
   for(const s of S.sessions){
     for(const e of s.entries){
       if(e.exId!==ex.id) continue;
-      w=e.weight;
+      if(e.weight!==w) fails=0; // you changed the weight yourself: failed attempts start over
+      w=e.weight; deloaded=false;
       const ok=e.sets.length===e.nSets&&e.sets.every(r=>r!=null&&r>=e.reps);
       if(ex.rule==='linear'){
         if(ok){w+=ex.inc;fails=0;}
-        else{fails++; if(fails>=3){w=rnd(w*0.9,2.5);fails=0;}}
+        else{fails++; if(fails>=3){w=rnd(w*0.9,2.5);fails=0;deloaded=true;}}
       }else if(ex.rule==='double'){
         if(ok){ if(stage>=ex.steps.length-1){w+=ex.inc;stage=0;}else stage++; fails=0; }
         else fails++;
@@ -272,13 +281,34 @@ function nextTarget(ex){
   }
   if(ex.override!=null) w=ex.override;
   const reps=ex.rule==='double'?(ex.steps[Math.min(stage,ex.steps.length-1)]||ex.reps):ex.reps;
-  return {weight:w,stage,reps,sets:ex.sets,fails};
+  return {weight:w,stage,reps,sets:ex.sets,fails,deloaded};
+}
+function trendText(ex,n){
+  if(!ex||ex.rule!=='linear'||ex.override!=null) return '';
+  if(n.deloaded) return 'Deloaded 10% after 3 missed sessions';
+  if(n.fails===1) return '2nd try at this weight';
+  if(n.fails===2) return 'Last try before a 10% deload';
+  return '';
 }
 
 function perSide(total,bar){
   let side=(total-bar)/2; const out=[];
   for(const p of [...S.settings.plates].sort((a,b)=>b-a)){ while(side>=p-1e-9){out.push(p);side-=p;} }
   return {out,short:side>0.01?fw(side):0};
+}
+const PLATE_COL={55:'#D63B33',45:'#2F6FD6',35:'#E8C21E',25:'#2E9E5B',10:'#F2F2EE',5:'#2A2A2A',2.5:'#A9AEB3'};
+function plateSvg(total,bar){
+  if(!bar||total<=bar) return '';
+  const {out}=perSide(total,bar); if(!out.length) return '';
+  const max=Math.max(...S.settings.plates), H=76;
+  let x=16, rects='';
+  for(const p of out){
+    const h=Math.round(20+54*Math.sqrt(p/max)), w=p>=25?14:p>=10?10:7;
+    rects+=`<rect x="${x}" y="${(H-h)/2}" width="${w}" height="${h}" rx="2" fill="${PLATE_COL[p]||'#7C838A'}" stroke="rgba(128,128,128,.7)"/>`;
+    x+=w+2;
+  }
+  const W=x+12;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect x="0" y="${H/2-4}" width="${W}" height="8" rx="2" fill="var(--muted)"/><rect x="9" y="${H/2-11}" width="5" height="22" rx="1" fill="var(--muted)"/>${rects}</svg>`;
 }
 function plateText(total,bar){
   if(!bar||total<=bar) return '';
@@ -302,7 +332,8 @@ function warmups(ex,work){
 const warmPlates=(w,bar)=>!bar?'':w<=bar?'bar only':perSide(w,bar).out.join('+')+' /side';
 
 /* ---- rest timer ---- */
-function startRest(){ R={end:Date.now()+S.settings.rest*1000,done:false,warned:false}; }
+// miss: use the longer rest; from: keep counting from when the set was first logged
+function startRest(miss,from){ const st=from||Date.now(); R={start:st,end:st+(miss?(S.settings.restFail||300):S.settings.rest)*1000,done:false,warned:false}; }
 let AC=null;
 function unlockAudio(){ try{ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} }
 function tone(freq,at,len,vol){
@@ -342,11 +373,12 @@ function vToday(){
   const last=[...S.sessions].reverse().find(s=>s.tid==='A'||s.tid==='B');
   const nxt=last&&last.tid==='A'?'B':'A';
   let h='';
-  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}</div>`;
+  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.pr?`<div class="pr">${esc(ui.pr)}</div>`:''}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}</div>`;
   h+='<h1>Start workout</h1>';
   for(const t of S.templates){
     const lines=t.ex.map(id=>{const ex=getEx(id); if(!ex) return ''; const n=nextTarget(ex);
-      return `<div class="line"><span>${esc(ex.name)}</span><span>${fw(n.weight)} · ${n.sets}×${n.reps}</span></div>`;}).join('');
+      const tr=trendText(ex,n);
+      return `<div class="line"><span>${esc(ex.name)}</span><span>${fw(n.weight)} · ${n.sets}×${n.reps}</span></div>${tr?`<div class="trend">${esc(tr)}</div>`:''}`;}).join('');
     h+=`<div class="card"><div class="row"><div class="name">${esc(t.name)}</div>${t.id===nxt?'<span class="muted">Up next</span>':''}</div>
       <div style="margin:8px 0 12px">${lines||'<span class="muted">No exercises yet. Add some in Plan.</span>'}</div>
       <button class="btn wide ${t.id===nxt?'primary':''}" data-a="start" data-t="${t.id}">Start ${esc(t.name)}</button></div>`;
@@ -361,13 +393,13 @@ function vActive(){
   const a=S.active, t=S.templates.find(x=>x.id===a.tid);
   let h=`<h1>${esc(t?t.name:'Workout')}</h1><div class="muted" style="margin:-6px 16px 14px;font-size:16px">Session time <b id="elapsed" style="font:700 20px/1 var(--head);color:var(--ink);font-variant-numeric:tabular-nums">${fmtClock(Date.now()-a.start)}</b></div>`;
   a.entries.forEach((e,i)=>{
-    const ex=getEx(e.exId)||{inc:5,bar:0};
+    const real=getEx(e.exId), ex=real||{inc:5,bar:0}, tr=real?trendText(real,nextTarget(real)):'';
     const circles=e.sets.map((v,j)=>`<button class="set ${v==null?'':(v>=e.reps?'done':'miss')}" data-a="set" data-e="${i}" data-s="${j}" aria-label="Set ${j+1}">${v==null?e.reps:v}</button>`).join('');
-    h+=`<div class="card"><div class="row"><div class="name">${esc(e.name)}</div><span class="muted">${e.nSets}×${e.reps}</span></div>
+    h+=`<div class="card"><div class="row"><div class="name">${esc(e.name)}</div><span class="muted">${e.nSets}×${e.reps}</span></div>${tr?`<div class="trend">${esc(tr)}</div>`:''}
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
       <span class="unit">lb</span><button class="step" data-a="w" data-e="${i}" data-d="1" aria-label="Increase weight">+</button></div>
-      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
+      <div class="plates muted">${plateSvg(e.weight,ex.bar)}<span>${esc(plateText(e.weight,ex.bar))}</span></div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
   });
   h+=`<div class="card"><label for="note" class="name" style="display:block;margin-bottom:6px">Notes</label>
       <textarea id="note" class="note" placeholder="How did it go?">${esc(a.note||'')}</textarea></div>`;
@@ -388,20 +420,35 @@ function chartSvg(pts){
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight over time"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>${dots}
     <text x="${p}" y="11" fill="var(--muted)" font-size="11">${fw(hi)} lb</text><text x="${p}" y="${H-2}" fill="var(--muted)" font-size="11">${fw(lo)} lb</text></svg>`;
 }
+const e1rm=(w,r)=>r>0?(r===1?w:w*(1+r/30)):0; // Epley estimate
+function entryBest(e){ return {heavy:e.sets.some(v=>v>0)?e.weight:0, e1:Math.max(0,...e.sets.map(v=>e1rm(e.weight,v||0)))}; }
+function bests(exId){
+  const b={heavy:0,e1:0,n:0};
+  for(const s of S.sessions) for(const e of s.entries) if(e.exId===exId){ const x=entryBest(e); b.heavy=Math.max(b.heavy,x.heavy); b.e1=Math.max(b.e1,x.e1); b.n++; }
+  return b;
+}
 function vHist(){
   let h='<h1>History</h1>';
   const withData=S.ex.filter(e=>loggedWeights(e.id).length);
   if(withData.length){
     if(!withData.find(e=>e.id===ui.chart)) ui.chart=withData[0].id;
-    h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${chartSvg(loggedWeights(ui.chart))}</div>`;
+    h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${chartSvg(loggedWeights(ui.chart))}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> · Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ui.chart))}</div>`;
   }
   if(!S.sessions.length) return h+'<div class="empty">No workouts yet. Finish one and it shows up here.</div>';
   h+='<div class="card">';
   for(const s of [...S.sessions].reverse()){
     h+=`<div class="sess"><div class="row"><div class="name">${esc(s.name)}</div><span class="muted">${fmtDate(s.date)}${s.dur?' · '+fmtMin(s.dur):''}</span></div>`;
-    for(const e of s.entries) h+=`<div class="line"><span>${esc(e.name)} ${fw(e.weight)}</span><span>${e.sets.map(v=>v==null?'–':v).join(' ')}</span></div>`;
-    if(s.note) h+=`<div class="muted snote">${esc(s.note)}</div>`;
-    h+=`<div style="margin-top:6px"><button class="btn sm danger" data-a="delsess" data-id="${s.id}">${ui.confirm===s.id?'Tap again to delete':'Delete'}</button></div></div>`;
+    if(ui.editSess===s.id){
+      s.entries.forEach((e,i)=>{ h+=`<div class="hrow"><b>${esc(e.name)}</b><input class="mini" type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="hw" data-sid="${s.id}" data-e="${i}" aria-label="${esc(e.name)} weight"><span class="unit">lb</span><span class="muted">reps</span>
+        ${e.sets.map((v,j)=>`<input class="mini" type="number" inputmode="numeric" min="0" value="${v==null?'':v}" placeholder="–" data-f="hset" data-sid="${s.id}" data-e="${i}" data-s="${j}" aria-label="Set ${j+1} reps">`).join('')}</div>`; });
+      h+=`<textarea class="note" data-hnote="${s.id}" placeholder="Notes" style="margin-top:6px">${esc(s.note||'')}</textarea>`;
+      h+=`<div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm primary" data-a="hdone">Done</button>`;
+    }else{
+      for(const e of s.entries) h+=`<div class="line"><span>${esc(e.name)} ${fw(e.weight)}</span><span>${e.sets.map(v=>v==null?'–':v).join(' ')}</span></div>`;
+      if(s.note) h+=`<div class="muted snote">${esc(s.note)}</div>`;
+      h+=`<div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" data-a="hedit" data-id="${s.id}">Edit</button>`;
+    }
+    h+=`<button class="btn sm danger" data-a="delsess" data-id="${s.id}">${ui.confirm===s.id?'Tap again to delete':'Delete'}</button></div></div>`;
   }
   return h+'</div>';
 }
@@ -445,6 +492,7 @@ function vData(){
   return `<h1>Backup</h1>
   <div class="card"><div class="name" style="margin-bottom:6px">Settings</div>
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
+    <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
     <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option></select></div></div>
@@ -478,17 +526,20 @@ document.addEventListener('click',ev=>{
   const imp=$('#imp'); if(imp) ui.imp=imp.value; // re-render below would wipe the pasted text
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.toastSync=ui.toastShare=false; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; break;
     case 'start': {
       const t=S.templates.find(x=>x.id===d.t); if(!t) break;
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);
         return {exId:id,name:ex.name,weight:n.weight,nSets:n.sets,reps:n.reps,stage:n.stage,sets:Array(n.sets).fill(null)};}).filter(Boolean)};
-      ui.toast=''; ui.toastSync=ui.toastShare=false; break; }
+      ui.toast=''; ui.pr=''; ui.toastSync=ui.toastShare=false; break; }
+    case 'hedit': ui.editSess=d.id; break;
+    case 'hdone': ui.editSess=null; break;
     case 'wset': { const e=S.active.entries[+d.e]; e.wd=e.wd||[]; e.wd[+d.k]=!e.wd[+d.k]; break; }
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
-      e.sets[j]=cur==null?e.reps:(cur>0?cur-1:null);
-      if(cur==null) startRest();
+      const nv=cur==null?e.reps:(cur>0?cur-1:null); e.sets[j]=nv;
+      if(cur==null) startRest(false);
+      else if(cur>=e.reps&&nv!=null&&nv<e.reps) startRest(true,R&&R.start); // set just became a miss
       break; }
     case 'w': { const e=S.active.entries[+d.e], ex=getEx(e.exId); e.weight=Math.max(0,fw(e.weight+(+d.d)*(ex?ex.inc:5))); break; }
     case 'r30': if(R){R.end=Math.max(R.end,Date.now())+30000;R.done=false;R.warned=false;} break;
@@ -501,6 +552,11 @@ document.addEventListener('click',ev=>{
       entries.forEach(e=>delete e.wd); // warm-ups aren't part of the log
       if(entries.length){
         const dur=Date.now()-a.start;
+        const prs=[];
+        for(const e of entries){ const prev=bests(e.exId), cur=entryBest(e); if(!prev.n) continue;
+          if(cur.heavy>prev.heavy) prs.push(e.name+' '+fw(cur.heavy)+' lb');
+          else if(cur.e1>prev.e1+0.5) prs.push(e.name+' est. 1RM '+Math.round(cur.e1)+' lb'); }
+        ui.pr=prs.length?'New PR: '+prs.join(', '):'';
         const sess={id:uid(),date:Date.now(),start:a.start,dur,tid:a.tid,name:t?t.name:'Workout',entries};
         if((a.note||'').trim()) sess.note=a.note.trim();
         S.sessions.push(sess);
@@ -532,19 +588,32 @@ document.addEventListener('click',ev=>{
     case 'grestore': if(keep==='grestore'){ restoreGist(); return; } ui.confirm='grestore'; break;
     case 'gdisc': if(keep==='gdisc'){ G={token:'',id:'',armed:false,last:0,err:'',hash:'',found:''}; saveG(); } else ui.confirm='gdisc'; break;
   }
+  if(S.active) S.active.rest=R;
   save(); render();
 });
 // workout note: save as you type, without re-rendering (a re-render on blur would swallow the Finish tap)
-document.addEventListener('input',ev=>{ if(ev.target.id==='note'&&S.active){ S.active.note=ev.target.value; save(); } });
+document.addEventListener('input',ev=>{
+  if(ev.target.id==='note'&&S.active){ S.active.note=ev.target.value; save(); }
+  const hs=ev.target.dataset.hnote&&S.sessions.find(x=>x.id===ev.target.dataset.hnote);
+  if(hs){ if(ev.target.value.trim()) hs.note=ev.target.value; else delete hs.note; save(); }
+});
 document.addEventListener('change',ev=>{
   const el=ev.target.closest('[data-f]'); if(!el) return;
   const d=el.dataset, v=el.value;
+  // editing a past workout: save without re-rendering so the Done tap isn't swallowed
+  if(d.f==='hw'||d.f==='hset'){
+    const s=S.sessions.find(x=>x.id===d.sid), e=s&&s.entries[+d.e]; if(!e) return;
+    if(d.f==='hw'){ const n=parseFloat(v); if(!isNaN(n)&&n>=0) e.weight=n; }
+    else { const n=parseInt(v,10); e.sets[+d.s]=v===''?null:(n>=0?n:e.sets[+d.s]); }
+    save(); return;
+  }
   switch(d.f){
     case 'w': { const n=parseFloat(v); if(!isNaN(n)&&n>=0) S.active.entries[+d.e].weight=n; break; }
     case 'chart': ui.chart=v; break;
     case 'wake': S.settings.wake=v==='1'; break;
     case 'tadd': if(v) S.templates.find(t=>t.id===d.t).ex.push(v); break;
     case 'rest': { const n=parseInt(v,10); if(n>0) S.settings.rest=n; break; }
+    case 'restFail': { const n=parseInt(v,10); if(n>0) S.settings.restFail=n; break; }
     case 'plates': { const p=v.split(',').map(x=>parseFloat(x)).filter(x=>x>0); if(p.length) S.settings.plates=p; break; }
     case 'theme': S.settings.theme=v; applyTheme(); break;
     case 'gtoken': if(v.trim()){ G.token=v.trim(); G.id=''; G.armed=false; G.err=''; G.found=''; saveG(); connectGist(); } break;
