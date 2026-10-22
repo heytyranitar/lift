@@ -1,5 +1,5 @@
 // Bump this when you change any file so phones pick up the new version.
-const CACHE = 'lift-v11';
+const CACHE = 'lift-v12';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

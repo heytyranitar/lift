@@ -42,6 +42,22 @@
 :root[data-theme="prometheus"] .btn.primary{background:linear-gradient(180deg,#FF8E2E,#E5600F);border-color:#FF8E2E}
 :root[data-theme="prometheus"] #rest{background:linear-gradient(90deg,#4A1E0A,#7A2E0C);color:var(--ink);border:1px solid #FF7A1A;box-shadow:0 0 18px rgba(255,110,30,.35)}
 :root[data-theme="prometheus"] #rest .btn{color:var(--ink);border-color:rgba(255,190,130,.4)}
+/* Sukuna (Jujutsu Kaisen): black, bone and blood red, paired stripes after his markings */
+:root[data-theme="sukuna"]{
+  --bg:#0D0A0B;--surface:#171113;--ink:#EEE6DA;--muted:#A0928A;--line:#3A2427;
+  --accent:#DA3340;--accent-ink:#F7F0E6;--ok:#A8192A;--ok-ink:#F7F0E6;--miss:#4A4245;--soft:#241A1C;color-scheme:dark;
+  --head:"Shippori Mincho B1","Barlow Condensed",Georgia,serif;
+}
+:root[data-theme="sukuna"] body{background:radial-gradient(110% 45% at 50% -8%,rgba(170,20,35,.22),transparent 70%) fixed,var(--bg)}
+:root[data-theme="sukuna"] body::before{content:"\546A";position:fixed;right:-18px;bottom:44px;font:800 230px/1 var(--head);color:#DA3340;opacity:.05;pointer-events:none;z-index:-1}
+:root[data-theme="sukuna"] h1::after{content:"";display:block;width:34px;height:9px;margin-top:9px;background:linear-gradient(var(--accent) 0 3px,transparent 3px 6px,var(--accent) 6px)}
+:root[data-theme="sukuna"] .card{position:relative;border-color:#3F262A}
+:root[data-theme="sukuna"] .card::before{content:"";position:absolute;left:-1px;top:16px;width:3px;height:20px;background:linear-gradient(var(--accent) 0 8px,transparent 8px 12px,var(--accent) 12px)}
+:root[data-theme="sukuna"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),inset 0 5px 0 var(--surface),inset 0 7px 0 var(--accent)}
+:root[data-theme="sukuna"] .set.miss{border-color:var(--accent);color:var(--ink)}
+:root[data-theme="sukuna"] .btn.danger,:root[data-theme="sukuna"] .trend{color:#EC5A65}
+:root[data-theme="sukuna"] #rest{background:#1E1214;color:var(--ink);border:1px solid var(--accent)}
+:root[data-theme="sukuna"] #rest .btn{color:var(--ink);border-color:rgba(218,51,64,.5)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -104,7 +120,12 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 .sess+.sess{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .line{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-variant-numeric:tabular-nums}
 .empty{margin:30px 20px;text-align:center;color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}}
+@media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
+  /* Sukuna: a quick slash across a set as you complete it */
+  :root[data-theme="sukuna"] .set.cut{position:relative;overflow:hidden}
+  :root[data-theme="sukuna"] .set.cut::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
+  @keyframes slash{60%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
+}
 </style>
 </head>
 <body>
@@ -153,10 +174,12 @@ let S;
 try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }catch(e){ S=defaults(); }
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
+// heading fonts only some themes use, loaded when picked
+const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800'};
 const applyTheme=()=>{
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
-  if(t==='prometheus'&&!$('#font-cinzel')){ const l=document.createElement('link'); l.id='font-cinzel'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap'; document.head.appendChild(l); }
+  if(THEME_FONT[t]&&!$('#font-'+t)){ const l=document.createElement('link'); l.id='font-'+t; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family='+THEME_FONT[t]+'&display=swap'; document.head.appendChild(l); }
   // match the phone's status bar to the chosen theme
   const bg=t&&getComputedStyle(root).getPropertyValue('--bg').trim();
   document.querySelectorAll('meta[name=theme-color]').forEach(m=>{ if(!m.dataset.c) m.dataset.c=m.content; m.content=bg||m.dataset.c; });
@@ -379,7 +402,7 @@ function vActive(){
   let h=`<h1>${esc(t?t.name:'Workout')}</h1><div class="muted" style="margin:-6px 16px 14px;font-size:16px">Session time <b id="elapsed" style="font:700 20px/1 var(--head);color:var(--ink);font-variant-numeric:tabular-nums">${fmtClock(Date.now()-a.start)}</b></div>`;
   a.entries.forEach((e,i)=>{
     const real=getEx(e.exId), ex=real||{inc:5,bar:0}, tr=real?trendText(real,nextTarget(real)):'';
-    const circles=e.sets.map((v,j)=>`<button class="set ${v==null?'':(v>=e.reps?'done':'miss')}" data-a="set" data-e="${i}" data-s="${j}" aria-label="Set ${j+1}">${v==null?e.reps:v}</button>`).join('');
+    const circles=e.sets.map((v,j)=>`<button class="set ${v==null?'':(v>=e.reps?'done':'miss')}${ui.cut===i+'-'+j?' cut':''}" data-a="set" data-e="${i}" data-s="${j}" aria-label="Set ${j+1}">${v==null?e.reps:v}</button>`).join('');
     h+=`<div class="card"><div class="row"><div class="name">${esc(e.name)}</div><span class="muted">${e.nSets}×${e.reps}</span></div>${tr?`<div class="trend">${esc(tr)}</div>`:''}
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
@@ -480,7 +503,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
@@ -498,7 +521,7 @@ function vData(){
 }
 function render(){
   const v={today:vToday,hist:vHist,plan:vPlan,data:vData}[ui.tab]();
-  $('#view').innerHTML=v;
+  $('#view').innerHTML=v; ui.cut='';
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   tick(); wake();
 }
@@ -523,7 +546,7 @@ document.addEventListener('click',ev=>{
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
       const nv=cur==null?e.reps:(cur>0?cur-1:null); e.sets[j]=nv;
-      if(cur==null) startRest(false);
+      if(cur==null){ startRest(false); ui.cut=d.e+'-'+j; }
       else if(cur>=e.reps&&nv!=null&&nv<e.reps) startRest(true,R&&R.start); // set just became a miss
       break; }
     case 'w': { const e=S.active.entries[+d.e], ex=getEx(e.exId); e.weight=Math.max(0,fw(e.weight+(+d.d)*(ex?ex.inc:5))); break; }
