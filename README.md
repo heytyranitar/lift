@@ -9,7 +9,7 @@ Everything is in `index.html` (markup, styles, app code) plus `sw.js` (offline s
 - **Warm-ups** generated from the work weight: empty bar ×5, then about 40/60/80% for 5/3/2 reps. Exercises with "deadlift" in the name skip the empty bar. Per exercise: Auto or Off (default Auto when the exercise has a bar weight).
 - **Rest timer** that beeps 10 s before and at the end, keeps the screen on, survives the app being closed, and switches to a longer rest after a missed set.
 - **History** with a weight chart, heaviest weight and estimated 1RM (Epley), editable past workouts, and a note per workout. New PRs are called out when a workout is saved.
-- **Themes**: match device, light, dark, Sukuna, Gojo, Itachi.
+- **Themes**: match device, light, dark, Sukuna, Gojo, Itachi, Ultra Instinct.
 
 ## Backup
 - **Auto backup to a GitHub Gist.** Create a classic token with only the `gist` scope (GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)) and paste it under Settings → Auto backup. The app writes a secret gist named `lift-backup.json` after each workout and when you leave the app with unsaved changes; failures retry later. Secret gists are unlisted, not private.

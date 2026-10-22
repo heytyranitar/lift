@@ -101,6 +101,26 @@
 :root[data-theme="itachi"] .btn.danger,:root[data-theme="itachi"] .trend{color:#F0606B}
 :root[data-theme="itachi"] #rest{background:#141418;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(212,31,48,.3)}
 :root[data-theme="itachi"] #rest .btn{color:var(--ink);border-color:rgba(212,31,48,.5)}
+/* Ultra Instinct (Dragon Ball Super): black and chrome, silver aura, a faint violet tint */
+:root[data-theme="ultra"]{
+  --bg:#08080B;--surface:#121216;--ink:#F1F2F5;--muted:#9A9CA6;--line:#2A2A31;
+  --accent:#D9DCE3;--accent-ink:#0B0B0F;--ok:#C5C9D2;--ok-ink:#0B0B0F;--miss:#5A4E78;--soft:#1C1C22;color-scheme:dark;
+  --head:"Chakra Petch","Barlow Condensed",system-ui,sans-serif;
+}
+:root[data-theme="ultra"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
+  radial-gradient(9% 70% at 6% 100%,rgba(225,230,245,.16),transparent 72%),radial-gradient(16% 85% at 30% 104%,rgba(215,220,240,.13),transparent 70%),
+  radial-gradient(11% 75% at 54% 102%,rgba(240,242,252,.15),transparent 70%),radial-gradient(17% 90% at 78% 105%,rgba(195,185,235,.14),transparent 70%),
+  radial-gradient(9% 65% at 97% 100%,rgba(225,230,245,.16),transparent 72%),radial-gradient(120% 55% at 50% 118%,rgba(110,100,165,.2),transparent 70%)}
+:root[data-theme="ultra"] h1{letter-spacing:.5px}
+:root[data-theme="ultra"] h1::after{content:"";display:block;width:70px;height:2px;margin-top:10px;background:linear-gradient(90deg,#fff,#C9CDD6 45%,transparent);box-shadow:0 0 8px rgba(255,255,255,.55)}
+:root[data-theme="ultra"] .card{background:rgba(18,18,22,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+:root[data-theme="ultra"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(230,234,245,.8)}
+:root[data-theme="ultra"] .set.done{background:radial-gradient(circle at 50% 32%,#FFFFFF,#CDD1D9 45%,#8C909A 88%);border-color:#E6E8EE;box-shadow:0 0 12px rgba(220,225,240,.35)}
+:root[data-theme="ultra"] .set.miss{color:#fff}
+:root[data-theme="ultra"] .btn.primary{background:linear-gradient(180deg,#F4F5F8,#AEB2BC);border-color:#E6E8EE;box-shadow:0 0 14px rgba(220,225,240,.25)}
+:root[data-theme="ultra"] .btn.danger,:root[data-theme="ultra"] .trend{color:#BBA9F2}
+:root[data-theme="ultra"] #rest{background:#111115;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(220,225,240,.2)}
+:root[data-theme="ultra"] #rest .btn{color:var(--ink);border-color:rgba(217,220,227,.4)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -180,6 +200,11 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
     background:radial-gradient(circle at 50% 16%,#0B0B0E 3.2px,transparent 3.7px),radial-gradient(circle at 22% 66%,#0B0B0E 3.2px,transparent 3.7px),radial-gradient(circle at 78% 66%,#0B0B0E 3.2px,transparent 3.7px);
     animation:tomoe .7s cubic-bezier(.3,.6,.3,1) forwards}
   @keyframes tomoe{0%{transform:rotate(-120deg);opacity:0}25%{opacity:1}75%{opacity:1}100%{transform:rotate(240deg);opacity:0}}
+  /* Ultra Instinct: silver afterimages slip sideways off a set as you complete it */
+  :root[data-theme="ultra"] .set.fresh{position:relative}
+  :root[data-theme="ultra"] .set.fresh::before,:root[data-theme="ultra"] .set.fresh::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(240,242,248,.9);background:rgba(220,225,240,.22);pointer-events:none;opacity:0;animation:afterimage .45s ease-out forwards}
+  :root[data-theme="ultra"] .set.fresh::before{animation-delay:.07s}
+  @keyframes afterimage{0%{transform:translateX(0);opacity:.85}100%{transform:translateX(26px);opacity:0}}
 }
 </style>
 </head>
@@ -230,8 +255,8 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700'};
-const THEMES=['light','dark','sukuna','gojo','itachi'];
+const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700',ultra:'Chakra+Petch:wght@600;700'};
+const THEMES=['light','dark','sukuna','gojo','itachi','ultra'];
 const applyTheme=()=>{
   if(S.settings.theme&&!THEMES.includes(S.settings.theme)) S.settings.theme=''; // a theme that was removed: back to matching the device
   const t=S.settings.theme, root=document.documentElement;
@@ -560,7 +585,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${st.theme==='ultra'?'selected':''}>Ultra Instinct</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
