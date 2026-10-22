@@ -107,6 +107,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body
 h1{font:700 34px/1 var(--head);margin:18px 16px 14px;letter-spacing:.2px}
 h2{font:700 22px/1 var(--head);margin:22px 16px 10px}
 main{max-width:560px;margin:0 auto}
+main>.card:first-child,main>.empty:first-child{margin-top:16px} /* tabs without a page title */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:0 12px 12px;padding:14px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .muted{color:var(--muted);font-size:14px}
@@ -491,7 +492,7 @@ function bests(exId){
   return b;
 }
 function vHist(){
-  let h='<h1>History</h1>';
+  let h='';
   const withData=S.ex.filter(e=>loggedWeights(e.id).length);
   if(withData.length){
     if(!withData.find(e=>e.id===ui.chart)) ui.chart=withData[0].id;
@@ -516,7 +517,7 @@ function vHist(){
   return h+'</div>';
 }
 function vPlan(){
-  let h='<h1>Plan</h1>';
+  let h='';
   for(const t of S.templates){
     h+=`<div class="card"><div class="name" style="margin-bottom:6px">${esc(t.name)}</div>`;
     t.ex.forEach((id,i)=>{ const ex=getEx(id);
@@ -552,7 +553,7 @@ function vPlan(){
 }
 function vData(){
   const st=S.settings;
-  return `<h1>Backup</h1>
+  return `
   <div class="card"><div class="name" style="margin-bottom:6px">Settings</div>
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
