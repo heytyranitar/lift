@@ -80,6 +80,18 @@
 :root[data-theme="gojo"] .btn.danger,:root[data-theme="gojo"] .trend{color:#B9A3FF}
 :root[data-theme="gojo"] #rest{background:#0A101E;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(92,200,255,.3)}
 :root[data-theme="gojo"] #rest .btn{color:var(--ink);border-color:rgba(92,200,255,.45)}
+/* Yuta (Jujutsu Kaisen 0): white uniform, black ink, Rika's shadow, the promise ring */
+:root[data-theme="yuta"]{
+  --bg:#F3F2EE;--surface:#FFFFFF;--ink:#15161A;--muted:#666A74;--line:#D9D9DE;
+  --accent:#1C1D24;--accent-ink:#FFFFFF;--ok:#15161A;--ok-ink:#FFFFFF;--miss:#A63D52;--soft:#E9E8E4;color-scheme:light;
+  --head:"Zen Maru Gothic","Barlow Condensed",system-ui,sans-serif;
+}
+:root[data-theme="yuta"] body{background:radial-gradient(120% 50% at 50% 115%,rgba(20,20,32,.16),transparent 70%) fixed,var(--bg)}
+:root[data-theme="yuta"] body::before{content:"\611B";position:fixed;right:-14px;bottom:44px;font:700 230px/1 var(--head);color:#15161A;opacity:.045;pointer-events:none;z-index:-1}
+:root[data-theme="yuta"] h1::after{content:"";display:block;width:72px;height:12px;margin-top:8px;
+  background:radial-gradient(circle at 6px 6px,transparent 3.5px,#9EA3AD 4px 5.5px,transparent 6px),linear-gradient(90deg,var(--ink),transparent) 15px 5.5px/57px 1.5px no-repeat}
+:root[data-theme="yuta"] .card{border-color:#E2E1DC;box-shadow:0 1px 2px rgba(20,20,30,.05),0 4px 14px -8px rgba(20,20,30,.12)}
+:root[data-theme="yuta"] .btn.primary{letter-spacing:.3px}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -151,6 +163,10 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
   :root[data-theme="gojo"] .set.fresh{position:relative}
   :root[data-theme="gojo"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #9BE3FF;box-shadow:0 0 10px #5CC8FF;pointer-events:none;animation:pulse .5s ease-out forwards}
   @keyframes pulse{from{transform:scale(1);opacity:.95}to{transform:scale(1.75);opacity:0}}
+  /* Yuta: a silver glint sweeps across a set as you complete it */
+  :root[data-theme="yuta"] .set.fresh{position:relative;overflow:hidden}
+  :root[data-theme="yuta"] .set.fresh::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(225,230,240,.85) 50%,transparent 65%);transform:translateX(-110%);pointer-events:none;animation:glint .45s ease-out forwards}
+  @keyframes glint{to{transform:translateX(110%)}}
 }
 </style>
 </head>
@@ -201,7 +217,7 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900'};
+const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',yuta:'Zen+Maru+Gothic:wght@700'};
 const applyTheme=()=>{
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
@@ -529,7 +545,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="yuta" ${st.theme==='yuta'?'selected':''}>Yuta</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
