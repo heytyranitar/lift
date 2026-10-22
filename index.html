@@ -66,8 +66,7 @@ button{cursor:pointer}
 .wrow input:focus-visible,.btn:focus-visible,.set:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .step{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);font-size:22px;line-height:1}
 .unit{color:var(--muted);font-weight:600}
-.plates{min-height:20px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
-.plates svg{flex:none}
+.plates{min-height:20px;margin-bottom:10px}
 .trend{font-size:13px;color:var(--miss);margin-top:-2px}
 .pr{font-weight:700;margin-top:4px}
 .stats{margin-top:8px}
@@ -296,20 +295,6 @@ function perSide(total,bar){
   for(const p of [...S.settings.plates].sort((a,b)=>b-a)){ while(side>=p-1e-9){out.push(p);side-=p;} }
   return {out,short:side>0.01?fw(side):0};
 }
-const PLATE_COL={55:'#D63B33',45:'#2F6FD6',35:'#E8C21E',25:'#2E9E5B',10:'#F2F2EE',5:'#2A2A2A',2.5:'#A9AEB3'};
-function plateSvg(total,bar){
-  if(!bar||total<=bar) return '';
-  const {out}=perSide(total,bar); if(!out.length) return '';
-  const max=Math.max(...S.settings.plates), H=76;
-  let x=16, rects='';
-  for(const p of out){
-    const h=Math.round(20+54*Math.sqrt(p/max)), w=p>=25?14:p>=10?10:7;
-    rects+=`<rect x="${x}" y="${(H-h)/2}" width="${w}" height="${h}" rx="2" fill="${PLATE_COL[p]||'#7C838A'}" stroke="rgba(128,128,128,.7)"/>`;
-    x+=w+2;
-  }
-  const W=x+12;
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect x="0" y="${H/2-4}" width="${W}" height="8" rx="2" fill="var(--muted)"/><rect x="9" y="${H/2-11}" width="5" height="22" rx="1" fill="var(--muted)"/>${rects}</svg>`;
-}
 function plateText(total,bar){
   if(!bar||total<=bar) return '';
   const {out,short}=perSide(total,bar);
@@ -399,7 +384,7 @@ function vActive(){
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
       <span class="unit">lb</span><button class="step" data-a="w" data-e="${i}" data-d="1" aria-label="Increase weight">+</button></div>
-      <div class="plates muted">${plateSvg(e.weight,ex.bar)}<span>${esc(plateText(e.weight,ex.bar))}</span></div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
+      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
   });
   h+=`<div class="card"><label for="note" class="name" style="display:block;margin-bottom:6px">Notes</label>
       <textarea id="note" class="note" placeholder="How did it go?">${esc(a.note||'')}</textarea></div>`;
