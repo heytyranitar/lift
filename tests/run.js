@@ -231,6 +231,30 @@ test('an update replaces the offline copy despite HTTP caching, and the version 
   } finally { srv.close(); }
 });
 
+test('rest notifications: "next set at" while resting, "Rest over" if it ends while away', async () => {
+  const srv = await serve();
+  try {
+    const { p, ctx, errs } = await open(srv.url);
+    await ctx.grantPermissions(['notifications'], { origin: srv.url });
+    await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 5000 });
+    await withState(p, s => { s.settings.rest = 2; });
+    await p.click('[data-tab=data]'); await p.selectOption('[data-f=notify]', '1'); await p.waitForTimeout(300);
+    const notes = () => p.evaluate(async () => (await (await navigator.serviceWorker.getRegistration()).getNotifications({ tag: 'lift-rest' })).map(n => n.title + ' | ' + n.body));
+    await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=A]');
+    await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.waitForTimeout(300);
+    const [n] = await notes();
+    ok(/^Resting · next set at .+ \| Next: Squat · set 2$/.test(n || ''), 'resting notification, got: ' + n);
+    await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); });
+    await p.waitForTimeout(2500);
+    eq(await notes(), ['Rest over | Next: Squat · set 2']);
+    await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true }); });
+    await p.click('[data-a=set][data-e="0"][data-s="1"]'); await p.waitForTimeout(300);
+    await p.click('[data-a=rskip]'); await p.waitForTimeout(300);
+    eq(await notes(), [], 'dismissing the rest clears the notification');
+    return errs;
+  } finally { srv.close(); }
+});
+
 test('themes load cleanly; a removed theme falls back to the device setting', async () => {
   const { p, errs } = await open();
   await p.click('[data-tab=data]');
@@ -254,7 +278,7 @@ test('weight sits on the card, not in an input box', async () => {
 
 /* ---- run ---- */
 (async () => {
-  browser = await chromium.launch();
+  browser = await chromium.launch({ channel: 'chromium' }); // full Chromium: the slimmer headless shell has no notifications
   let failed = 0;
   for (const t of tests) {
     try {

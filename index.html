@@ -476,10 +476,35 @@ function tick(){
   b.hidden=false;
   const left=Math.ceil((R.end-Date.now())/1000);
   if(left<=10&&left>0&&!R.warned){ R.warned=true; beep(1); }
-  if(left<=0){ if(!R.done){R.done=true;beep(3);} $('#rt').textContent='Go'; }
+  if(left<=0){ if(!R.done){R.done=true;beep(3);restEnded();} $('#rt').textContent='Go'; }
   else $('#rt').textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
 }
 setInterval(tick,500);
+
+/* ---- rest notifications (Android): "next set at 10:42" while resting, an alert if the rest ends while you're away ---- */
+const notifyOn=()=>S.settings.notify&&'Notification' in window&&Notification.permission==='granted';
+const restReg=()=>'serviceWorker' in navigator?navigator.serviceWorker.getRegistration():Promise.resolve(null);
+function nextSetText(){
+  for(const e of (S.active?S.active.entries:[])){ const j=e.sets.indexOf(null); if(j>=0) return 'Next: '+e.name+' \u00b7 set '+(j+1); }
+  return 'All sets logged';
+}
+async function restNote(kind){
+  try{
+    const reg=await restReg(); if(!reg) return;
+    if(kind==='clear'||!notifyOn()||!R){ (await reg.getNotifications({tag:'lift-rest'})).forEach(n=>n.close()); return; }
+    const at=new Date(R.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    if(kind==='start') await reg.showNotification('Resting \u00b7 next set at '+at,{tag:'lift-rest',body:nextSetText(),icon:'icon-192.png',silent:true});
+    else await reg.showNotification('Rest over',{tag:'lift-rest',body:nextSetText(),icon:'icon-192.png',renotify:true,vibrate:[300,120,300,120,300]});
+  }catch(e){}
+}
+let restKey, restTimer=0; // restKey starts undefined so the first sync also clears a leftover notification
+// called after every tap: post or clear the notification when the rest changes, and wake up exactly when it ends
+function syncRest(){
+  const k=R&&!R.done?R.end:null; if(k===restKey) return; restKey=k;
+  clearTimeout(restTimer);
+  if(k){ restTimer=setTimeout(tick,R.end-Date.now()+50); restNote('start'); } else restNote('clear');
+}
+function restEnded(){ restKey=null; restNote(document.visibilityState==='hidden'?'end':'clear'); }
 
 /* ---- views ---- */
 function vToday(){
@@ -608,6 +633,8 @@ function vData(){
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
+    <div class="field"><label>Rest notifications</label><select data-f="notify"><option value="0">Off</option><option value="1" ${notifyOn()?'selected':''}>On</option></select></div>
+    ${ui.notifyMsg?`<p class="muted" style="margin:-2px 0 6px">${esc(ui.notifyMsg)}</p>`:''}
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
     <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${st.theme==='ultra'?'selected':''}>Ultra Instinct</option><option value="todoroki" ${st.theme==='todoroki'?'selected':''}>Todoroki</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
@@ -708,7 +735,7 @@ document.addEventListener('click',ev=>{
     case 'gdisc': if(keep==='gdisc'){ G={token:'',id:'',armed:false,last:0,err:'',hash:'',found:''}; saveG(); } else ui.confirm='gdisc'; break;
   }
   if(S.active) S.active.rest=R;
-  save(); render();
+  syncRest(); save(); render();
 });
 // workout note: save as you type, without re-rendering (a re-render on blur would swallow the Finish tap)
 document.addEventListener('input',ev=>{
@@ -730,6 +757,16 @@ document.addEventListener('change',ev=>{
     case 'w': { const n=parseFloat(v); if(!isNaN(n)&&n>=0) S.active.entries[+d.e].weight=n; break; }
     case 'chart': ui.chart=v; break;
     case 'wake': S.settings.wake=v==='1'; break;
+    case 'notify':
+      ui.notifyMsg='';
+      if(v!=='1'){ S.settings.notify=false; restNote('clear'); break; }
+      if(!('Notification' in window)){ ui.notifyMsg='This browser can\u2019t show notifications.'; break; }
+      Notification.requestPermission().then(r=>{
+        S.settings.notify=r==='granted';
+        ui.notifyMsg=r==='granted'?'':'Notifications are blocked for Lift. Allow them in Android Settings \u2192 Apps \u2192 Lift \u2192 Notifications.';
+        save(); render(); if(r==='granted'&&R&&!R.done){ restKey=null; syncRest(); }
+      });
+      break;
     case 'tadd': if(v) S.templates.find(t=>t.id===d.t).ex.push(v); break;
     case 'rest': { const n=parseInt(v,10); if(n>0) S.settings.rest=n; break; }
     case 'restFail': { const n=parseInt(v,10); if(n>0) S.settings.restFail=n; break; }
@@ -749,6 +786,7 @@ document.addEventListener('change',ev=>{
   save(); render();
 });
 window.liftBusy=()=>!!S.active;
+syncRest(); // reopened mid-rest: re-arm the end alert
 window.setVer=v=>{ VER=v; const el=$('#ver'); if(el) el.textContent=v; };
 render();
 })();

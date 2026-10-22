@@ -1,5 +1,5 @@
 // Bump this when you change any file so phones pick up the new version.
-const CACHE = 'lift-v23';
+const CACHE = 'lift-v24';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,13 @@ self.addEventListener('activate', e => {
 });
 
 // Lets the page show which version is running.
+// Tapping a rest notification brings the app back.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then(cs => cs.length ? cs[0].focus() : self.clients.openWindow('./')));
+});
+
 self.addEventListener('message', e => {
   if (e.data === 'version' && e.source) e.source.postMessage({ version: CACHE });
 });
