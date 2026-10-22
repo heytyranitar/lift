@@ -189,7 +189,7 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
   <button class="tab" data-a="tab" data-tab="today">Today</button>
   <button class="tab" data-a="tab" data-tab="hist">History</button>
   <button class="tab" data-a="tab" data-tab="plan">Plan</button>
-  <button class="tab" data-a="tab" data-tab="data">Backup</button>
+  <button class="tab" data-a="tab" data-tab="data">Settings</button>
 </nav>
 <script>
 (function(){
@@ -554,7 +554,7 @@ function vPlan(){
 function vData(){
   const st=S.settings;
   return `
-  <div class="card"><div class="name" style="margin-bottom:6px">Settings</div>
+  <div class="card">
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
