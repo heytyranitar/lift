@@ -31,32 +31,28 @@
   --bg:#121519;--surface:#1B2026;--ink:#E8EAE6;--muted:#97A0A9;--line:#2B323A;
   --accent:#6C93FF;--accent-ink:#0B1020;--ok:#4CC38A;--miss:#F0805F;--soft:#252B33;color-scheme:dark;
 }
-/* Prometheus (Hades II): charred stone, ember orange, molten gold */
-:root[data-theme="prometheus"]{
-  --bg:#150D09;--surface:#22150F;--ink:#F3E4C8;--muted:#B89D7E;--line:#43291A;
-  --accent:#FF7A1A;--accent-ink:#1A0B03;--ok:#E5A93A;--ok-ink:#1A0B03;--miss:#C8402B;--soft:#301D13;color-scheme:dark;
-  --head:"Cinzel","Barlow Condensed",Georgia,serif;
-}
-:root[data-theme="prometheus"] body{background:radial-gradient(120% 60% at 50% 110%,rgba(255,110,30,.16),transparent 70%) fixed,var(--bg)}
-:root[data-theme="prometheus"] .card{border-color:#5A341D;box-shadow:inset 0 1px 0 rgba(255,170,90,.06)}
-:root[data-theme="prometheus"] .btn.primary{background:linear-gradient(180deg,#FF8E2E,#E5600F);border-color:#FF8E2E}
-:root[data-theme="prometheus"] #rest{background:linear-gradient(90deg,#4A1E0A,#7A2E0C);color:var(--ink);border:1px solid #FF7A1A;box-shadow:0 0 18px rgba(255,110,30,.35)}
-:root[data-theme="prometheus"] #rest .btn{color:var(--ink);border-color:rgba(255,190,130,.4)}
 /* Sukuna (Jujutsu Kaisen): black, bone and blood red, paired stripes after his markings */
 :root[data-theme="sukuna"]{
   --bg:#0D0A0B;--surface:#171113;--ink:#EEE6DA;--muted:#A0928A;--line:#3A2427;
   --accent:#DA3340;--accent-ink:#F7F0E6;--ok:#A8192A;--ok-ink:#F7F0E6;--miss:#4A4245;--soft:#241A1C;color-scheme:dark;
   --head:"Shippori Mincho B1","Barlow Condensed",Georgia,serif;
 }
-:root[data-theme="sukuna"] body{background:radial-gradient(110% 45% at 50% -8%,rgba(170,20,35,.22),transparent 70%) fixed,var(--bg)}
+:root[data-theme="sukuna"] body{background:
+  radial-gradient(1.5px 1.5px at 31px 57px,rgba(255,90,70,.6),transparent),radial-gradient(1px 1px at 143px 121px,rgba(255,140,90,.5),transparent),
+  radial-gradient(2px 2px at 97px 173px,rgba(218,51,64,.5),transparent),radial-gradient(1px 1px at 181px 23px,rgba(255,110,80,.45),transparent);
+  background-size:210px 210px;background-color:var(--bg);background-attachment:fixed}
+:root[data-theme="sukuna"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(110% 42% at 50% -8%,rgba(170,20,35,.28),transparent 70%),radial-gradient(90% 28% at 50% 108%,rgba(120,10,20,.2),transparent 70%)}
 :root[data-theme="sukuna"] body::before{content:"\546A";position:fixed;right:-18px;bottom:44px;font:800 230px/1 var(--head);color:#DA3340;opacity:.05;pointer-events:none;z-index:-1}
-:root[data-theme="sukuna"] h1::after{content:"";display:block;width:34px;height:9px;margin-top:9px;background:linear-gradient(var(--accent) 0 3px,transparent 3px 6px,var(--accent) 6px)}
-:root[data-theme="sukuna"] .card{position:relative;border-color:#3F262A}
-:root[data-theme="sukuna"] .card::before{content:"";position:absolute;left:-1px;top:16px;width:3px;height:20px;background:linear-gradient(var(--accent) 0 8px,transparent 8px 12px,var(--accent) 12px)}
-:root[data-theme="sukuna"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),inset 0 5px 0 var(--surface),inset 0 7px 0 var(--accent)}
+:root[data-theme="sukuna"] h1::after{content:"";display:block;width:34px;height:9px;margin-top:9px;background:linear-gradient(var(--accent) 0 3px,transparent 3px 6px,var(--accent) 6px);filter:drop-shadow(0 0 4px rgba(218,51,64,.8))}
+:root[data-theme="sukuna"] .card{position:relative;border-color:#3F262A;background:rgba(23,17,19,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,120,110,.08)}
+:root[data-theme="sukuna"] .card::before{content:"";position:absolute;left:-1px;top:16px;width:3px;height:20px;background:linear-gradient(var(--accent) 0 8px,transparent 8px 12px,var(--accent) 12px);filter:drop-shadow(0 0 3px rgba(218,51,64,.9))}
+:root[data-theme="sukuna"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),inset 0 5px 0 var(--surface),inset 0 7px 0 var(--accent),0 -8px 16px -10px rgba(218,51,64,.9)}
+:root[data-theme="sukuna"] .set.done{background:radial-gradient(circle at 50% 38%,#E3434F,#8E1020 72%);border-color:#E3434F;box-shadow:0 0 12px rgba(218,51,64,.45)}
+:root[data-theme="sukuna"] .btn.primary{background:linear-gradient(180deg,#E23A47,#B11F2C);border-color:#E23A47;box-shadow:0 0 14px rgba(218,51,64,.35)}
 :root[data-theme="sukuna"] .set.miss{border-color:var(--accent);color:var(--ink)}
 :root[data-theme="sukuna"] .btn.danger,:root[data-theme="sukuna"] .trend{color:#EC5A65}
-:root[data-theme="sukuna"] #rest{background:#1E1214;color:var(--ink);border:1px solid var(--accent)}
+:root[data-theme="sukuna"] #rest{background:#160E10;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(218,51,64,.3)}
 :root[data-theme="sukuna"] #rest .btn{color:var(--ink);border-color:rgba(218,51,64,.5)}
 /* Gojo (Jujutsu Kaisen): Unlimited Void navy, white hair, Six Eyes blue, Hollow Purple misses */
 :root[data-theme="gojo"]{
@@ -80,31 +76,27 @@
 :root[data-theme="gojo"] .btn.danger,:root[data-theme="gojo"] .trend{color:#B9A3FF}
 :root[data-theme="gojo"] #rest{background:#0A101E;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(92,200,255,.3)}
 :root[data-theme="gojo"] #rest .btn{color:var(--ink);border-color:rgba(92,200,255,.45)}
-/* Yuta (Jujutsu Kaisen 0): white uniform, black ink, Rika's shadow, the promise ring */
-:root[data-theme="yuta"]{
-  --bg:#F3F2EE;--surface:#FFFFFF;--ink:#15161A;--muted:#666A74;--line:#D9D9DE;
-  --accent:#1C1D24;--accent-ink:#FFFFFF;--ok:#15161A;--ok-ink:#FFFFFF;--miss:#A63D52;--soft:#E9E8E4;color-scheme:light;
-  --head:"Zen Maru Gothic","Barlow Condensed",system-ui,sans-serif;
-}
-:root[data-theme="yuta"] body{background:radial-gradient(120% 50% at 50% 115%,rgba(20,20,32,.16),transparent 70%) fixed,var(--bg)}
-:root[data-theme="yuta"] body::before{content:"\611B";position:fixed;right:-14px;bottom:44px;font:700 230px/1 var(--head);color:#15161A;opacity:.045;pointer-events:none;z-index:-1}
-:root[data-theme="yuta"] h1::after{content:"";display:block;width:72px;height:12px;margin-top:8px;
-  background:radial-gradient(circle at 6px 6px,transparent 3.5px,#9EA3AD 4px 5.5px,transparent 6px),linear-gradient(90deg,var(--ink),transparent) 15px 5.5px/57px 1.5px no-repeat}
-:root[data-theme="yuta"] .card{border-color:#E2E1DC;box-shadow:0 1px 2px rgba(20,20,30,.05),0 4px 14px -8px rgba(20,20,30,.12)}
-:root[data-theme="yuta"] .btn.primary{letter-spacing:.3px}
 /* Itachi (Naruto): charcoal, Sharingan crimson, Tsukuyomi's red moon, a scratched headband */
 :root[data-theme="itachi"]{
   --bg:#0B0B0E;--surface:#141418;--ink:#EEEEF1;--muted:#9B9BA5;--line:#2B2B33;
   --accent:#D41F30;--accent-ink:#FFFFFF;--ok:#B5121F;--ok-ink:#FFFFFF;--miss:#4B4B55;--soft:#212127;color-scheme:dark;
   --head:"Kaisei Tokumin","Barlow Condensed",Georgia,serif;
 }
-:root[data-theme="itachi"] body{background:radial-gradient(circle at 88% 7%,rgba(212,31,48,.15) 0 44px,rgba(212,31,48,.06) 46px,transparent 150px) fixed,var(--bg)}
+:root[data-theme="itachi"] body{background:radial-gradient(130% 90% at 50% 35%,transparent 55%,rgba(0,0,0,.55)) fixed,var(--bg)}
+:root[data-theme="itachi"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
+  radial-gradient(circle at 88% 7%,rgba(212,31,48,.2) 0 44px,rgba(212,31,48,.07) 46px,transparent 150px),
+  repeating-radial-gradient(circle at 88% 7%,transparent 0 62px,rgba(212,31,48,.09) 62px 63px,transparent 63px 88px);
+  -webkit-mask:radial-gradient(circle at 88% 7%,#000 0 170px,transparent 360px);mask:radial-gradient(circle at 88% 7%,#000 0 170px,transparent 360px)}
+:root[data-theme="itachi"] .card{background:rgba(20,20,24,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+:root[data-theme="itachi"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(212,31,48,.9)}
+:root[data-theme="itachi"] .btn.primary{background:linear-gradient(180deg,#E0303F,#A8121F);border-color:#E0303F;box-shadow:0 0 14px rgba(212,31,48,.35)}
 :root[data-theme="itachi"] body::before{content:"\6731";position:fixed;right:-14px;bottom:44px;font:700 230px/1 var(--head);color:#D41F30;opacity:.05;pointer-events:none;z-index:-1}
 :root[data-theme="itachi"] h1::after{content:"";display:block;width:46px;height:14px;margin-top:8px;border-radius:2px;
   background:linear-gradient(160deg,transparent calc(50% - 1px),var(--accent) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(#7E8089,#4E5058);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
-:root[data-theme="itachi"] .set.done{box-shadow:inset 0 0 0 8px var(--ok),inset 0 0 0 9.5px rgba(0,0,0,.5)}
+:root[data-theme="itachi"] .set.done{border-color:#E8323F;box-shadow:0 0 12px rgba(212,31,48,.45);
+  background:radial-gradient(circle closest-side,transparent 0 calc(100% - 10px),rgba(0,0,0,.5) calc(100% - 10px) calc(100% - 8.5px),transparent calc(100% - 8.5px)),radial-gradient(circle at 50% 40%,#E8323F,#9E0F1B 72%)}
 :root[data-theme="itachi"] .btn.danger,:root[data-theme="itachi"] .trend{color:#F0606B}
-:root[data-theme="itachi"] #rest{background:#18181D;color:var(--ink);border:1px solid var(--accent)}
+:root[data-theme="itachi"] #rest{background:#141418;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(212,31,48,.3)}
 :root[data-theme="itachi"] #rest .btn{color:var(--ink);border-color:rgba(212,31,48,.5)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -177,10 +169,6 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
   :root[data-theme="gojo"] .set.fresh{position:relative}
   :root[data-theme="gojo"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #9BE3FF;box-shadow:0 0 10px #5CC8FF;pointer-events:none;animation:pulse .5s ease-out forwards}
   @keyframes pulse{from{transform:scale(1);opacity:.95}to{transform:scale(1.75);opacity:0}}
-  /* Yuta: a silver glint sweeps across a set as you complete it */
-  :root[data-theme="yuta"] .set.fresh{position:relative;overflow:hidden}
-  :root[data-theme="yuta"] .set.fresh::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(225,230,240,.85) 50%,transparent 65%);transform:translateX(-110%);pointer-events:none;animation:glint .45s ease-out forwards}
-  @keyframes glint{to{transform:translateX(110%)}}
   /* Itachi: three tomoe spin once around a set as you complete it */
   :root[data-theme="itachi"] .set.fresh{position:relative}
   :root[data-theme="itachi"] .set.fresh::after{content:"";position:absolute;inset:-2px;border-radius:50%;pointer-events:none;
@@ -237,8 +225,10 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',yuta:'Zen+Maru+Gothic:wght@700',itachi:'Kaisei+Tokumin:wght@700'};
+const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700'};
+const THEMES=['light','dark','sukuna','gojo','itachi'];
 const applyTheme=()=>{
+  if(S.settings.theme&&!THEMES.includes(S.settings.theme)) S.settings.theme=''; // a theme that was removed: back to matching the device
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
   if(THEME_FONT[t]&&!$('#font-'+t)){ const l=document.createElement('link'); l.id='font-'+t; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family='+THEME_FONT[t]+'&display=swap'; document.head.appendChild(l); }
@@ -565,7 +555,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="yuta" ${st.theme==='yuta'?'selected':''}>Yuta</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
