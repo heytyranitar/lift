@@ -58,6 +58,28 @@
 :root[data-theme="sukuna"] .btn.danger,:root[data-theme="sukuna"] .trend{color:#EC5A65}
 :root[data-theme="sukuna"] #rest{background:#1E1214;color:var(--ink);border:1px solid var(--accent)}
 :root[data-theme="sukuna"] #rest .btn{color:var(--ink);border-color:rgba(218,51,64,.5)}
+/* Gojo (Jujutsu Kaisen): Unlimited Void navy, white hair, Six Eyes blue, Hollow Purple misses */
+:root[data-theme="gojo"]{
+  --bg:#070A12;--surface:#0F1522;--ink:#F2F6FF;--muted:#93A0BA;--line:#22304A;
+  --accent:#5CC8FF;--accent-ink:#04121F;--ok:#2B8FE6;--ok-ink:#04121F;--miss:#7C4DFF;--soft:#18213A;color-scheme:dark;
+  --head:"Zen Kaku Gothic New","Barlow Condensed",system-ui,sans-serif;
+}
+:root[data-theme="gojo"] body{background:
+  radial-gradient(1px 1px at 23px 41px,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 131px 97px,rgba(190,225,255,.45),transparent),
+  radial-gradient(1.5px 1.5px at 77px 151px,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 173px 13px,rgba(255,255,255,.35),transparent);
+  background-size:190px 190px;background-color:var(--bg);background-attachment:fixed}
+:root[data-theme="gojo"] body::after{content:"";position:fixed;inset:0;background:radial-gradient(90% 40% at 50% -5%,rgba(92,200,255,.18),transparent 70%);pointer-events:none;z-index:-1}
+:root[data-theme="gojo"] body::before{content:"\7121";position:fixed;right:-14px;bottom:44px;font:900 230px/1 var(--head);color:#5CC8FF;opacity:.05;pointer-events:none;z-index:-1}
+:root[data-theme="gojo"] h1{letter-spacing:.5px}
+:root[data-theme="gojo"] h1::after{content:"";display:block;width:56px;height:2px;margin-top:10px;background:linear-gradient(90deg,var(--accent),transparent);box-shadow:0 0 8px rgba(92,200,255,.8)}
+:root[data-theme="gojo"] .card{background:rgba(15,21,34,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(140,220,255,.12)}
+:root[data-theme="gojo"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(92,200,255,.9)}
+:root[data-theme="gojo"] .set.done{background:radial-gradient(circle at 50% 38%,#9BE3FF,#2B8FE6 70%);border-color:#7AD3FF;box-shadow:0 0 12px rgba(92,200,255,.45)}
+:root[data-theme="gojo"] .set.miss{color:#fff}
+:root[data-theme="gojo"] .btn.primary{box-shadow:0 0 14px rgba(92,200,255,.35)}
+:root[data-theme="gojo"] .btn.danger,:root[data-theme="gojo"] .trend{color:#B9A3FF}
+:root[data-theme="gojo"] #rest{background:#0A101E;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(92,200,255,.3)}
+:root[data-theme="gojo"] #rest .btn{color:var(--ink);border-color:rgba(92,200,255,.45)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -122,9 +144,13 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 .empty{margin:30px 20px;text-align:center;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
   /* Sukuna: a quick slash across a set as you complete it */
-  :root[data-theme="sukuna"] .set.cut{position:relative;overflow:hidden}
-  :root[data-theme="sukuna"] .set.cut::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
+  :root[data-theme="sukuna"] .set.fresh{position:relative;overflow:hidden}
+  :root[data-theme="sukuna"] .set.fresh::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
   @keyframes slash{60%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
+  /* Gojo: a blue ring pulses out from a set as you complete it */
+  :root[data-theme="gojo"] .set.fresh{position:relative}
+  :root[data-theme="gojo"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #9BE3FF;box-shadow:0 0 10px #5CC8FF;pointer-events:none;animation:pulse .5s ease-out forwards}
+  @keyframes pulse{from{transform:scale(1);opacity:.95}to{transform:scale(1.75);opacity:0}}
 }
 </style>
 </head>
@@ -175,7 +201,7 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800'};
+const THEME_FONT={prometheus:'Cinzel:wght@600;700',sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900'};
 const applyTheme=()=>{
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
@@ -402,7 +428,7 @@ function vActive(){
   let h=`<h1>${esc(t?t.name:'Workout')}</h1><div class="muted" style="margin:-6px 16px 14px;font-size:16px">Session time <b id="elapsed" style="font:700 20px/1 var(--head);color:var(--ink);font-variant-numeric:tabular-nums">${fmtClock(Date.now()-a.start)}</b></div>`;
   a.entries.forEach((e,i)=>{
     const real=getEx(e.exId), ex=real||{inc:5,bar:0}, tr=real?trendText(real,nextTarget(real)):'';
-    const circles=e.sets.map((v,j)=>`<button class="set ${v==null?'':(v>=e.reps?'done':'miss')}${ui.cut===i+'-'+j?' cut':''}" data-a="set" data-e="${i}" data-s="${j}" aria-label="Set ${j+1}">${v==null?e.reps:v}</button>`).join('');
+    const circles=e.sets.map((v,j)=>`<button class="set ${v==null?'':(v>=e.reps?'done':'miss')}${ui.fresh===i+'-'+j?' fresh':''}" data-a="set" data-e="${i}" data-s="${j}" aria-label="Set ${j+1}">${v==null?e.reps:v}</button>`).join('');
     h+=`<div class="card"><div class="row"><div class="name">${esc(e.name)}</div><span class="muted">${e.nSets}×${e.reps}</span></div>${tr?`<div class="trend">${esc(tr)}</div>`:''}
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
@@ -503,7 +529,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="prometheus" ${st.theme==='prometheus'?'selected':''}>Prometheus</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
@@ -521,7 +547,7 @@ function vData(){
 }
 function render(){
   const v={today:vToday,hist:vHist,plan:vPlan,data:vData}[ui.tab]();
-  $('#view').innerHTML=v; ui.cut='';
+  $('#view').innerHTML=v; ui.fresh='';
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   tick(); wake();
 }
@@ -546,7 +572,7 @@ document.addEventListener('click',ev=>{
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
       const nv=cur==null?e.reps:(cur>0?cur-1:null); e.sets[j]=nv;
-      if(cur==null){ startRest(false); ui.cut=d.e+'-'+j; }
+      if(cur==null){ startRest(false); ui.fresh=d.e+'-'+j; } // lets a theme animate the set just completed
       else if(cur>=e.reps&&nv!=null&&nv<e.reps) startRest(true,R&&R.start); // set just became a miss
       break; }
     case 'w': { const e=S.active.entries[+d.e], ex=getEx(e.exId); e.weight=Math.max(0,fw(e.weight+(+d.d)*(ex?ex.inc:5))); break; }
