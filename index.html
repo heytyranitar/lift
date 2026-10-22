@@ -121,6 +121,24 @@
 :root[data-theme="ultra"] .btn.danger,:root[data-theme="ultra"] .trend{color:#BBA9F2}
 :root[data-theme="ultra"] #rest{background:#111115;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(220,225,240,.2)}
 :root[data-theme="ultra"] #rest .btn{color:var(--ink);border-color:rgba(217,220,227,.4)}
+/* Todoroki (My Hero Academia): half-cold half-hot, flame on the left, ice on the right */
+:root[data-theme="todoroki"]{
+  --bg:#0B0E15;--surface:#141821;--ink:#F2F3F5;--muted:#9AA1AE;--line:#2A303C;
+  --accent:#F2F3F5;--accent-ink:#0B0D12;--ok:#E0402F;--ok-ink:#0B0D12;--miss:#3A404C;--soft:#1D222D;color-scheme:dark;
+  --head:"Kanit","Barlow Condensed",system-ui,sans-serif;
+  --fire:#E0402F;--ice:#A6DCF3;
+}
+:root[data-theme="todoroki"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
+  radial-gradient(55% 70% at -8% 60%,rgba(224,64,47,.2),transparent 70%),radial-gradient(55% 70% at 108% 40%,rgba(166,220,243,.17),transparent 70%)}
+:root[data-theme="todoroki"] h1::after{content:"";display:block;width:64px;height:3px;margin-top:10px;border-radius:2px;background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);box-shadow:-6px 0 10px -2px rgba(224,64,47,.6),6px 0 10px -2px rgba(166,220,243,.6)}
+:root[data-theme="todoroki"] .card{background:rgba(20,24,33,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 2px 0 0 rgba(224,64,47,.55),inset -2px 0 0 rgba(166,220,243,.55)}
+:root[data-theme="todoroki"] .tab.on{box-shadow:none;background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%) top/100% 2px no-repeat}
+:root[data-theme="todoroki"] .set.done{background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);background-origin:border-box;border-color:transparent;box-shadow:-4px 0 10px -3px rgba(224,64,47,.6),4px 0 10px -3px rgba(166,220,243,.6)}
+:root[data-theme="todoroki"] .set.miss{color:#fff}
+:root[data-theme="todoroki"] .btn.primary{background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);background-origin:border-box;border-color:transparent;color:#0B0D12}
+:root[data-theme="todoroki"] .btn.danger,:root[data-theme="todoroki"] .trend{color:#FF8A73}
+:root[data-theme="todoroki"] #rest{background:#11141B;color:var(--ink);border:1px solid #3A404C;border-left-color:var(--fire);border-right-color:var(--ice);box-shadow:-8px 0 16px -8px rgba(224,64,47,.6),8px 0 16px -8px rgba(166,220,243,.6)}
+:root[data-theme="todoroki"] #rest .btn{color:var(--ink);border-color:rgba(242,243,245,.3)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -205,6 +223,12 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
   :root[data-theme="ultra"] .set.fresh::before,:root[data-theme="ultra"] .set.fresh::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(240,242,248,.9);background:rgba(220,225,240,.22);pointer-events:none;opacity:0;animation:afterimage .45s ease-out forwards}
   :root[data-theme="ultra"] .set.fresh::before{animation-delay:.07s}
   @keyframes afterimage{0%{transform:translateX(0);opacity:.85}100%{transform:translateX(26px);opacity:0}}
+  /* Todoroki: a ring bursts out of a set as you complete it, flame on the left half, ice on the right */
+  :root[data-theme="todoroki"] .set.fresh{position:relative}
+  :root[data-theme="todoroki"] .set.fresh::before,:root[data-theme="todoroki"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid var(--fire);box-shadow:0 0 10px var(--fire);pointer-events:none;animation:burst .5s ease-out forwards}
+  :root[data-theme="todoroki"] .set.fresh::before{clip-path:inset(-20px 50% -20px -20px)}
+  :root[data-theme="todoroki"] .set.fresh::after{border-color:var(--ice);box-shadow:0 0 10px var(--ice);clip-path:inset(-20px -20px -20px 50%)}
+  @keyframes burst{from{transform:scale(1);opacity:.95}to{transform:scale(1.7);opacity:0}}
 }
 </style>
 </head>
@@ -255,8 +279,8 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700',ultra:'Chakra+Petch:wght@600;700'};
-const THEMES=['light','dark','sukuna','gojo','itachi','ultra'];
+const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700',ultra:'Chakra+Petch:wght@600;700',todoroki:'Kanit:wght@600;700'};
+const THEMES=['light','dark','sukuna','gojo','itachi','ultra','todoroki'];
 const applyTheme=()=>{
   if(S.settings.theme&&!THEMES.includes(S.settings.theme)) S.settings.theme=''; // a theme that was removed: back to matching the device
   const t=S.settings.theme, root=document.documentElement;
@@ -585,7 +609,7 @@ function vData(){
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${st.theme==='ultra'?'selected':''}>Ultra Instinct</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${st.theme==='ultra'?'selected':''}>Ultra Instinct</option><option value="todoroki" ${st.theme==='todoroki'?'selected':''}>Todoroki</option></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>

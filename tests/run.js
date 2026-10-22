@@ -232,7 +232,7 @@ test('themes load cleanly; a removed theme falls back to the device setting', as
   const { p, errs } = await open();
   await p.click('[data-tab=data]');
   const themes = await p.$$eval('[data-f=theme] option', o => o.map(x => x.value));
-  eq(themes, ['', 'light', 'dark', 'sukuna', 'gojo', 'itachi', 'ultra']);
+  eq(themes, ['', 'light', 'dark', 'sukuna', 'gojo', 'itachi', 'ultra', 'todoroki']);
   for (const t of themes.filter(Boolean)) {
     await p.selectOption('[data-f=theme]', t);
     eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), t);
