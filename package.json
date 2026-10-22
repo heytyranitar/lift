@@ -1,0 +1,11 @@
+{
+  "name": "lift",
+  "private": true,
+  "description": "Personal workout logger PWA. The app itself needs no build; this file only exists for the browser tests.",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

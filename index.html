@@ -122,7 +122,8 @@ button{cursor:pointer}
 .btns{display:flex;gap:8px;margin:0 12px 12px}
 .btns .btn{flex:1}
 .wrow{display:flex;align-items:center;gap:8px;margin:10px 0 2px}
-.wrow input{width:96px;text-align:center;font:700 40px/1 var(--head);border:0;background:transparent;padding:0;font-variant-numeric:tabular-nums}
+.wrow input[type=number]{flex:1;min-width:0;width:auto;min-height:44px;text-align:center;font:700 40px/1 var(--head);border:0;background:transparent;padding:0;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
+.wrow input::-webkit-inner-spin-button,.wrow input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .wrow input:focus-visible,.btn:focus-visible,.set:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .step{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);font-size:22px;line-height:1}
 .unit{color:var(--muted);font-weight:600}
