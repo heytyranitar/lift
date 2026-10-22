@@ -286,12 +286,13 @@ function plateText(total,bar){
   return 'Per side: '+(out.join(' + ')||'none')+(short?' (short '+short+')':'');
 }
 
-/* ---- warm-ups: empty bar 2x5, then ~40/60/80% of the work weight for 5/3/2 reps ---- */
+/* ---- warm-ups: empty bar x5, then ~40/60/80% of the work weight for 5/3/2 reps.
+   Deadlifts skip the empty bar: it sits too low to pull from the floor. ---- */
 const warmMode=ex=>ex.warm||(ex.bar>0?'auto':'off');
 function warmups(ex,work){
   if(warmMode(ex)==='off'||!(work>0)) return [];
   const bar=ex.bar||0, out=[];
-  if(bar>0&&work>bar) out.push({w:bar,r:5},{w:bar,r:5});
+  if(bar>0&&work>bar&&!/deadlift/i.test(ex.name||'')) out.push({w:bar,r:5});
   for(const [pct,r] of [[.4,5],[.6,3],[.8,2]]){
     const w=rnd(work*pct,5), last=out[out.length-1];
     if(w>bar&&w<work&&(!last||w>last.w)) out.push({w,r});
