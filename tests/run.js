@@ -140,6 +140,25 @@ test('warm-ups: one empty-bar set, none for deadlifts, off without a bar', async
   return errs;
 });
 
+test('one light warm-up set: 60% for 5, starts the rest when ticked', async () => {
+  const { p, errs } = await open();
+  await withState(p, s => {
+    Object.assign(s.ex.find(e => e.id === 'hammer'), { warm: 'light', override: 35 });
+    Object.assign(s.ex.find(e => e.id === 'curl'), { warm: 'light', override: 5 }); // 60% rounds up to the work weight: no warm-up
+    Object.assign(s.ex.find(e => e.id === 'ohp'), { warm: 'light', override: 65 }); // 60% is under the bar: the empty bar instead
+  });
+  await p.click('[data-tab=plan]'); await p.click('[data-a=exopen][data-id=hammer]');
+  eq(await p.$eval('[data-k=warm]', s => s.selectedOptions[0].textContent), 'One light set (60% ×5)');
+  await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=C]');
+  eq(await texts(p, '.wset'), ['20×5'], 'hammer curl 35: one set, none for the 5 lb curl');
+  await p.click('[data-a=wset]');
+  ok(await p.isVisible('#rest'), 'ticking the warm-up starts the rest timer');
+  await p.click('[data-a=discard]'); await p.click('[data-a=discard]');
+  await p.click('[data-a=start][data-t=B]');
+  eq(await p.$$eval('.card', c => [...c[1].querySelectorAll('.wset')].map(x => x.firstChild.textContent)), ['45×5'], 'press 65: empty bar');
+  return errs;
+});
+
 test('rest timer: normal rest, longer after a miss, survives a reload', async () => {
   const { p, errs } = await open();
   await withState(p, s => { s.settings.rest = 180; s.settings.restFail = 300; });

@@ -509,11 +509,14 @@ function plateText(total,bar){
 }
 
 /* ---- warm-ups: empty bar x5, then ~40/60/80% of the work weight for 5/3/2 reps.
-   Deadlifts skip the empty bar: it sits too low to pull from the floor. ---- */
+   Deadlifts skip the empty bar: it sits too low to pull from the floor.
+   Light: one set at ~60% x5 (the empty bar if that's lighter), for curls and other accessories. ---- */
 const warmMode=ex=>ex.warm||(ex.bar>0?'auto':'off');
 function warmups(ex,work){
-  if(warmMode(ex)==='off'||!(work>0)) return [];
+  const mode=warmMode(ex);
+  if(mode==='off'||!(work>0)) return [];
   const bar=ex.bar||0, out=[];
+  if(mode==='light'){ const w=Math.max(bar,rnd(work*.6,5)); return w>0&&w<work?[{w,r:5}]:[]; }
   if(bar>0&&work>bar&&!/deadlift/i.test(ex.name||'')) out.push({w:bar,r:5});
   for(const [pct,r] of [[.4,5],[.6,3],[.8,2]]){
     const w=rnd(work*pct,5), last=out[out.length-1];
@@ -695,7 +698,7 @@ function vPlan(){
       h+=f('Increment (lb)','inc',ex.inc);
       h+=f('Bar weight (0 = no plates)','bar',ex.bar);
       h+=`<div class="field"><label>Warm-up sets</label><select data-f="ex" data-id="${ex.id}" data-k="warm">
-        <option value="auto" ${warmMode(ex)==='auto'?'selected':''}>Auto (bar, then 40/60/80%)</option><option value="off" ${warmMode(ex)==='off'?'selected':''}>Off</option></select></div>`;
+        <option value="auto" ${warmMode(ex)==='auto'?'selected':''}>Auto (bar, then 40/60/80%)</option><option value="light" ${warmMode(ex)==='light'?'selected':''}>One light set (60% ×5)</option><option value="off" ${warmMode(ex)==='off'?'selected':''}>Off</option></select></div>`;
       h+=f('Next weight','override',fw(n.weight));
       h+=`<button class="btn sm danger" data-a="exdel" data-id="${ex.id}" style="margin-top:6px">${ui.confirm==='ex'+ex.id?'Tap again to delete':'Delete exercise'}</button>`;
     }
