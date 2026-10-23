@@ -327,7 +327,52 @@ applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 // ask the browser not to clear our data when the phone is low on space
 try{ navigator.storage.persisted().then(p=>p||navigator.storage.persist()).catch(()=>{}); }catch(e){}
-function validBackup(o){ return !!o&&Array.isArray(o.ex)&&Array.isArray(o.templates)&&Array.isArray(o.sessions); }
+/* ---- check a backup before it replaces everything: a malformed one would be saved and then crash every render,
+   so the app wouldn't open again. Returns what's wrong, or '' if it's fine. ---- */
+const isNum=x=>typeof x==='number'&&isFinite(x), isAmt=x=>isNum(x)&&x>=0, isCount=x=>Number.isInteger(x)&&x>=0;
+const isStr=x=>typeof x==='string', isObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
+// a logged exercise, in a saved workout or the one in progress
+function entryProblem(e){
+  if(!isObj(e)) return 'is not an object';
+  if(!isStr(e.exId)||!isStr(e.name)) return 'has no exercise id or name';
+  if(!isAmt(e.weight)) return 'has an invalid weight';
+  if(!isCount(e.nSets)||!isAmt(e.reps)) return 'has an invalid set or rep count';
+  if(!Array.isArray(e.sets)||!e.sets.every(r=>r==null||isCount(r))) return 'has invalid set results';
+  if(e.wd!=null&&!Array.isArray(e.wd)) return 'has invalid warm-ups';
+  return '';
+}
+function backupProblem(o){
+  if(!isObj(o)||!Array.isArray(o.ex)||!Array.isArray(o.templates)||!Array.isArray(o.sessions)) return 'it has no exercises, templates or workouts';
+  const named=(what,i,x)=>what+' '+(i+1)+(isObj(x)&&isStr(x.name)?' ('+x.name+')':'');
+  for(const [i,x] of o.ex.entries()){
+    const p=!isObj(x)?'is not an object':!isStr(x.id)||!isStr(x.name)||!isStr(x.rule)?'has no id, name or progression'
+      :!isCount(x.sets)?'needs a whole number of sets':![x.reps,x.inc,x.start,x.bar].every(isAmt)?'has an invalid reps, increment, start or bar weight'
+      :!Array.isArray(x.steps)||!x.steps.every(isAmt)?'has invalid rep steps':x.stage0!=null&&!isCount(x.stage0)?'has an invalid starting step'
+      :x.override!=null&&!isAmt(x.override)?'has an invalid next weight':x.warm!=null&&!isStr(x.warm)?'has an invalid warm-up setting':'';
+    if(p) return named('exercise',i,x)+' '+p;
+  }
+  for(const [i,t] of o.templates.entries())
+    if(!isObj(t)||!isStr(t.id)||!isStr(t.name)||!Array.isArray(t.ex)||!t.ex.every(isStr)) return named('workout template',i,t)+' is invalid';
+  for(const [i,s] of o.sessions.entries()){
+    const p=!isObj(s)?'is not an object':!isStr(s.id)||!isStr(s.name)||!isNum(s.date)?'has no id, name or date'
+      :s.dur!=null&&!isAmt(s.dur)?'has an invalid duration':s.note!=null&&!isStr(s.note)?'has an invalid note':!Array.isArray(s.entries)?'has no exercises':'';
+    if(p) return named('workout',i,s)+' '+p;
+    for(const e of s.entries){ const q=entryProblem(e); if(q) return named('workout',i,s)+': '+(isObj(e)&&isStr(e.name)?e.name:'an exercise')+' '+q; }
+  }
+  const a=o.active;
+  if(a!=null){
+    if(!isObj(a)||!isNum(a.start)||!Array.isArray(a.entries)||(a.note!=null&&!isStr(a.note))) return 'the workout in progress is invalid';
+    if(a.rest!=null&&!(isObj(a.rest)&&isNum(a.rest.start)&&isNum(a.rest.end))) return 'the rest timer is invalid';
+    for(const e of a.entries){ const q=entryProblem(e); if(q) return 'the workout in progress: '+(isObj(e)&&isStr(e.name)?e.name:'an exercise')+' '+q; }
+  }
+  const st=o.settings;
+  if(st!=null){
+    if(!isObj(st)) return 'its settings are invalid';
+    if(st.plates!=null&&!(Array.isArray(st.plates)&&st.plates.every(x=>isNum(x)&&x>0))) return 'its plate list is invalid';
+    if((st.rest!=null&&!isAmt(st.rest))||(st.restFail!=null&&!isAmt(st.restFail))) return 'its rest times are invalid';
+  }
+  return '';
+}
 function applyBackup(o){ S=o; S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{}); applyTheme(); }
 
 /* ---- save a backup file (share sheet on phones, download elsewhere) ---- */
@@ -405,7 +450,7 @@ function restoreGist(){
     const g=await gh('/gists/'+G.id), f=g.files&&g.files[GFILE];
     if(!f) throw new Error('the gist has no '+GFILE);
     const text=f.truncated?await (await fetch(f.raw_url,{cache:'no-store'})).text():f.content;
-    const o=JSON.parse(text); if(!validBackup(o)) throw new Error('the gist does not hold a valid backup');
+    const o=JSON.parse(text), bad=backupProblem(o); if(bad) throw new Error('the gist does not hold a valid backup ('+bad+')');
     const active=S.active; applyBackup(o); if(active) S.active=active;
     G.armed=true; G.found=''; G.last=Date.now(); G.hash=hashStr(backupJson()); save();
     ui.toast='Restored your backup from '+fmtDate(g.updated_at)+'.'; ui.tab='today'; render();
@@ -685,7 +730,8 @@ function vData(){
     <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="copy">Copy backup</button><button class="btn" data-a="share">Save backup file</button></div></div>
   <div class="card"><div class="name">Import</div><p class="muted">Paste a backup here. This replaces everything currently in the app.</p>
     <textarea id="imp" placeholder="Paste backup text">${esc(ui.imp)}</textarea>
-    <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button></div>
+    <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button>
+    ${ui.impMsg?`<p class="muted impmsg" role="alert" style="margin:8px 0 0">${esc(ui.impMsg)}</p>`:''}</div>
   <p class="muted" style="text-align:center">App version <span id="ver">${esc(VER)}</span></p>`;
 }
 function render(){
@@ -703,7 +749,7 @@ document.addEventListener('click',ev=>{
   const imp=$('#imp'); if(imp) ui.imp=imp.value; // re-render below would wipe the pasted text
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; break;
     case 'start': {
       const t=S.templates.find(x=>x.id===d.t); if(!t) break;
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);
@@ -759,10 +805,11 @@ document.addEventListener('click',ev=>{
     case 'copy': { const ta=$('#exp'); try{ navigator.clipboard.writeText(ta.value).catch(()=>{ta.select();}); }catch(e){ ta.select(); } ta.select(); return; }
     case 'import':
       if(keep==='import'){
-        try{ const o=JSON.parse($('#imp').value);
-          if(!validBackup(o)) throw 0;
-          applyBackup(o); ui.toast='Backup imported.'; ui.tab='today'; ui.imp='';
-        }catch(e){ ui.toast='That text is not a valid backup. Nothing was changed.'; ui.tab='today'; }
+        let o=null; try{ o=JSON.parse($('#imp').value); }catch(e){}
+        const bad=o==null?'it isn’t backup text':backupProblem(o);
+        // a rejection stays here with the pasted text, so it shows even mid-workout (Today hides toasts then)
+        if(bad) ui.impMsg='That is not a valid backup: '+bad+'. Nothing was changed.';
+        else { applyBackup(o); ui.toast='Backup imported.'; ui.tab='today'; ui.imp=''; ui.impMsg=''; }
       } else ui.confirm='import';
       break;
     case 'share': shareBackup(); return;

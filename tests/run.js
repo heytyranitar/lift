@@ -75,7 +75,49 @@ test('imports a pasted backup (needs the text to survive the confirm tap)', asyn
   eq((await state(p)).settings.rest, 181);
   await p.click('[data-tab=data]'); await p.fill('#imp', 'not json');
   await p.click('[data-a=import]'); await p.click('[data-a=import]');
-  ok((await p.textContent('.toast')).includes('not a valid backup'));
+  eq(await p.textContent('.impmsg'), 'That is not a valid backup: it isn’t backup text. Nothing was changed.');
+  eq(await p.inputValue('#imp'), 'not json', 'pasted text kept to fix');
+  return errs;
+});
+
+test('import rejects a malformed backup with the reason, and accepts the app\'s own export', async () => {
+  const { p, errs } = await open();
+  const tryImport = async o => {
+    await p.click('[data-tab=data]'); await p.fill('#imp', JSON.stringify(o));
+    await p.click('[data-a=import]'); await p.click('[data-a=import]');
+    return p.textContent('.impmsg, .toast'); // a rejection shows under the button, success as a toast
+  };
+  // a real export: one finished workout, one in progress with the rest timer running
+  await p.click('[data-a=start][data-t=C]'); await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.click('[data-a=finish]');
+  await p.click('[data-a=start][data-t=A]'); await p.click('[data-a=set][data-e="0"][data-s="0"]');
+  await p.fill('#note', 'felt good');
+  const good = await state(p);
+  ok(good.sessions.length === 1 && good.active && good.active.rest, 'export has a workout and one in progress');
+
+  const broken = [
+    [s => { delete s.sessions[0].entries; }, 'workout 1 (Workout C) has no exercises'],
+    [s => { s.sessions[0].entries[0].sets = ['12']; }, 'workout 1 (Workout C): EZ-bar curl has invalid set results'],
+    [s => { s.ex[1].sets = '5'; }, 'exercise 2 (Bench press) needs a whole number of sets'],
+    [s => { s.templates[0].ex = 'squat'; }, 'workout template 1 (Workout A) is invalid'],
+    [s => { s.active.entries[0].weight = null; }, 'the workout in progress: Squat has an invalid weight'],
+    [s => { s.settings.plates = '45,25'; }, 'its plate list is invalid'],
+    [s => { s.ex = null; }, 'it has no exercises, templates or workouts'],
+  ];
+  for (const [breakIt, reason] of broken) {
+    const bad = JSON.parse(JSON.stringify(good)); bad.sessions[0].note = 'from the bad backup'; breakIt(bad);
+    eq(await tryImport(bad), 'That is not a valid backup: ' + reason + '. Nothing was changed.');
+    eq(await state(p), good, 'nothing changed after: ' + reason);
+  }
+  await p.click('[data-tab=hist]');
+  ok((await texts(p, '.name')).includes('Workout C'), 'History still renders');
+
+  good.sessions[0].note = 'imported';
+  await p.click('[data-tab=data]'); await p.fill('#imp', JSON.stringify(good));
+  await p.click('[data-a=import]'); await p.click('[data-a=import]');
+  eq(await state(p), good, 'own export imported as is');
+  ok(await p.isVisible('#note'), 'back on the workout in progress');
+  await p.click('[data-tab=hist]');
+  ok((await p.textContent('.snote')) === 'imported', 'imported workout shows in History');
   return errs;
 });
 
