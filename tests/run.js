@@ -260,17 +260,15 @@ test('themes load cleanly; a removed theme falls back to the device setting', as
   await p.click('[data-tab=data]');
   const themes = await p.$$eval('[data-f=theme] option', o => o.map(x => x.value));
   const chars = ['sukuna', 'gojo', 'itachi', 'ultra', 'todoroki'];
-  eq(themes, ['', 'light', 'dark', ...chars, ...chars.map(c => c + ':anim')]);
-  eq(await p.$$eval('[data-f=theme] optgroup', g => g.map(x => x.label)), ['Standard', 'Characters', 'Animated · uses more battery']);
-  const attrs = () => p.evaluate(() => [document.documentElement.getAttribute('data-theme'), document.documentElement.hasAttribute('data-anim')]);
+  eq(themes, ['', 'light', 'dark', ...chars]);
+  eq(await p.$$eval('[data-f=theme] optgroup', g => g.map(x => x.label)), ['Standard', 'Characters']);
   for (const t of themes.filter(Boolean)) {
     await p.selectOption('[data-f=theme]', t);
-    const [name, anim] = t.split(':');
-    eq(await attrs(), [name, anim === 'anim'], t);
-    if (anim) eq(await p.evaluate(() => document.getAnimations().length > 0), true, t + ' animates');
+    eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), t);
   }
-  await p.selectOption('[data-f=theme]', 'gojo');
-  eq(await p.evaluate(() => document.getAnimations().length), 0, 'still themes do not animate');
+  eq(await p.evaluate(() => document.getAnimations().length), 0, 'no ambient animation');
+  await withState(p, s => { s.settings.theme = 'gojo'; s.settings.anim = true; }); // was on an animated variant
+  eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), 'gojo');
   await withState(p, s => { s.settings.theme = 'prometheus'; });
   eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), null);
   return errs;
