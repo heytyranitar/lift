@@ -192,7 +192,7 @@ button{cursor:pointer}
 .toast{margin:12px;padding:12px 14px;border-radius:12px;background:var(--soft);border-left:4px solid var(--ok)}
 .field{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin:8px 0}
 .field label{color:var(--muted);font-size:14px}
-input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;min-height:40px}
+input[type=text],input[type=number],input[type=password],select,textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;min-height:40px}
 textarea{min-height:120px;font:13px/1.4 ui-monospace,Menlo,monospace}
 textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 .snote{white-space:pre-wrap;margin-top:4px}
@@ -203,7 +203,46 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 .sess+.sess{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .line{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-variant-numeric:tabular-nums}
 .empty{margin:30px 20px;text-align:center;color:var(--muted)}
+/* a background image picked in Settings (per theme, stored on the phone), dimmed toward the theme's own background */
+#bgimg,#fx{position:fixed;inset:0;pointer-events:none;display:none}
+#bgimg{z-index:-2;background:var(--bg-img) center/cover no-repeat}
+#bgimg::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:var(--bg-dim,.55)}
+:root[data-bgimg] #bgimg{display:block}
+#fx{z-index:-1;overflow:hidden}
+#fx::before,#fx::after{content:"";position:absolute;inset:0}
+input[type=range]{width:100%;accent-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
+  /* ---- animated theme variants (labelled "uses more battery"): only transform/opacity, so the GPU does the work ---- */
+  :root[data-anim] #fx{display:block}
+  /* Sukuna: embers drift upward */
+  :root[data-anim][data-theme="sukuna"] #fx::before{bottom:-240px;background:
+    radial-gradient(2.5px 2.5px at 40px 30px,rgba(255,120,80,.85),transparent),radial-gradient(3px 3px at 150px 110px,rgba(230,60,64,.75),transparent),
+    radial-gradient(2px 2px at 90px 190px,rgba(255,160,100,.75),transparent),radial-gradient(2.5px 2.5px at 205px 160px,rgba(255,90,70,.7),transparent),
+    radial-gradient(2px 2px at 20px 140px,rgba(255,130,90,.6),transparent),radial-gradient(1.5px 1.5px at 120px 60px,rgba(255,170,120,.7),transparent);
+    background-size:240px 240px;animation:drift 16s linear infinite}
+  @keyframes drift{to{transform:translateY(-240px)}}
+  /* Gojo: stars twinkle */
+  :root[data-anim][data-theme="gojo"] #fx::before,:root[data-anim][data-theme="gojo"] #fx::after{background:
+    radial-gradient(2px 2px at 60px 70px,rgba(255,255,255,.95),transparent),radial-gradient(1.5px 1.5px at 160px 30px,rgba(190,225,255,.95),transparent),
+    radial-gradient(2.5px 2.5px at 110px 170px,rgba(220,240,255,.9),transparent),radial-gradient(1.5px 1.5px at 25px 185px,rgba(255,255,255,.85),transparent);background-size:210px 210px;animation:twinkle 4.5s ease-in-out infinite alternate}
+  :root[data-anim][data-theme="gojo"] #fx::after{background-position:95px 120px;animation-delay:-2.2s;animation-duration:5.5s}
+  @keyframes twinkle{from{opacity:.1}to{opacity:1}}
+  /* Itachi: genjutsu ripples spread out from the moon */
+  :root[data-anim][data-theme="itachi"] #fx::before,:root[data-anim][data-theme="itachi"] #fx::after{transform-origin:88% 7%;
+    background:radial-gradient(circle at 88% 7%,transparent 0 69px,rgba(212,31,48,.4) 69px 72px,transparent 72px);animation:ripple 6s ease-out infinite}
+  :root[data-anim][data-theme="itachi"] #fx::after{animation-delay:-3s}
+  @keyframes ripple{from{transform:scale(.6);opacity:1}to{transform:scale(5);opacity:0}}
+  /* Ultra Instinct: the aura breathes */
+  :root[data-anim][data-theme="ultra"] #fx::before,:root[data-anim][data-theme="ultra"] #fx::after{transform-origin:50% 100%;background:
+    radial-gradient(10% 60% at 14% 102%,rgba(235,238,250,.34),transparent 70%),radial-gradient(9% 70% at 62% 104%,rgba(235,238,250,.34),transparent 70%),radial-gradient(8% 55% at 90% 102%,rgba(205,195,245,.34),transparent 70%);
+    animation:aura 3.2s ease-in-out infinite alternate}
+  :root[data-anim][data-theme="ultra"] #fx::after{transform:translateX(9%);animation-delay:-1.6s;animation-name:aura2}
+  @keyframes aura{from{transform:scaleY(.8);opacity:.15}to{transform:scaleY(1.2);opacity:1}}
+  @keyframes aura2{from{transform:translateX(9%) scaleY(.8);opacity:.15}to{transform:translateX(9%) scaleY(1.2);opacity:1}}
+  /* Todoroki: fire and ice pulse in turn */
+  :root[data-anim][data-theme="todoroki"] #fx::before{background:radial-gradient(60% 75% at -8% 60%,rgba(224,64,47,.5),transparent 70%);animation:pulseglow 4s ease-in-out infinite alternate}
+  :root[data-anim][data-theme="todoroki"] #fx::after{background:radial-gradient(60% 75% at 108% 40%,rgba(166,220,243,.45),transparent 70%);animation:pulseglow 4s ease-in-out -2s infinite alternate}
+  @keyframes pulseglow{from{opacity:0}to{opacity:1}}
   /* Sukuna: a quick slash across a set as you complete it */
   :root[data-theme="sukuna"] .set.fresh{position:relative;overflow:hidden}
   :root[data-theme="sukuna"] .set.fresh::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
@@ -233,6 +272,8 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 </style>
 </head>
 <body>
+<div id="bgimg" aria-hidden="true"></div><div id="fx" aria-hidden="true"></div>
+<input type="file" accept="image/*" data-f="bgfile" id="bgfile" hidden><!-- outside #view so a re-render while the picker is open can't drop the file -->
 <main id="view"></main>
 <div id="rest" hidden><span id="rt"></span><button class="btn sm" data-a="r30">+30s</button><button class="btn sm" data-a="rskip">Dismiss</button></div>
 <nav class="tabs">
@@ -281,15 +322,41 @@ S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
 const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700',ultra:'Chakra+Petch:wght@600;700',todoroki:'Kanit:wght@600;700'};
 const THEMES=['light','dark','sukuna','gojo','itachi','ultra','todoroki'];
+const THEME_NAMES={'':'Match device',light:'Light',dark:'Dark',sukuna:'Sukuna',gojo:'Gojo',itachi:'Itachi',ultra:'Ultra Instinct',todoroki:'Todoroki'};
+const ANIM_THEMES=['sukuna','gojo','itachi','ultra','todoroki']; // have an animated variant
 const applyTheme=()=>{
   if(S.settings.theme&&!THEMES.includes(S.settings.theme)) S.settings.theme=''; // a theme that was removed: back to matching the device
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
+  root.toggleAttribute('data-anim',!!S.settings.anim&&ANIM_THEMES.includes(t));
+  applyBg();
   if(THEME_FONT[t]&&!$('#font-'+t)){ const l=document.createElement('link'); l.id='font-'+t; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family='+THEME_FONT[t]+'&display=swap'; document.head.appendChild(l); }
   // match the phone's status bar to the chosen theme
   const bg=t&&getComputedStyle(root).getPropertyValue('--bg').trim();
   document.querySelectorAll('meta[name=theme-color]').forEach(m=>{ if(!m.dataset.c) m.dataset.c=m.content; m.content=bg||m.dataset.c; });
 };
+/* ---- background images: one per theme, kept in IndexedDB on this phone (too big for localStorage or backups) ---- */
+const bgStore=(()=>{
+  let dbp;
+  const db=()=>dbp||(dbp=new Promise((res,rej)=>{ const r=indexedDB.open('lift',1); r.onupgradeneeded=()=>r.result.createObjectStore('bg'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }));
+  const run=(mode,fn)=>db().then(d=>new Promise((res,rej)=>{ const t=d.transaction('bg',mode), q=fn(t.objectStore('bg')); t.oncomplete=()=>res(q.result); t.onerror=()=>rej(t.error); }));
+  return {get:k=>run('readonly',s=>s.get(k)), set:(k,v)=>run('readwrite',s=>s.put(v,k)), del:k=>run('readwrite',s=>s.delete(k))};
+})();
+const bgKey=()=>S.settings.theme||'device';
+const bgDim=()=>{ const d=(S.settings.bgDim||{})[bgKey()]; return d==null?.55:d; };
+let bgUrl='', bgInfo=null;
+function applyBg(){
+  const root=document.documentElement, key=bgKey();
+  root.style.setProperty('--bg-dim',bgDim());
+  bgStore.get(key).then(blob=>{
+    if(key!==bgKey()) return; // theme changed meanwhile
+    if(bgUrl) URL.revokeObjectURL(bgUrl);
+    bgUrl=blob?URL.createObjectURL(blob):''; bgInfo=blob?{type:blob.type,size:blob.size}:null;
+    if(blob) root.style.setProperty('--bg-img',`url("${bgUrl}")`);
+    root.toggleAttribute('data-bgimg',!!blob);
+    if(typeof ui!=='undefined'&&ui.tab==='data') render();
+  }).catch(()=>{});
+}
 applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 // ask the browser not to clear our data when the phone is low on space
@@ -627,7 +694,7 @@ function vPlan(){
   return h;
 }
 function vData(){
-  const st=S.settings;
+  const st=S.settings, cur=(st.theme||'')+(st.anim&&ANIM_THEMES.includes(st.theme)?':anim':'');
   return `
   <div class="card">
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
@@ -636,7 +703,10 @@ function vData(){
     <div class="field"><label>Rest notifications</label><select data-f="notify"><option value="0">Off</option><option value="1" ${notifyOn()?'selected':''}>On</option></select></div>
     ${ui.notifyMsg?`<p class="muted" style="margin:-2px 0 6px">${esc(ui.notifyMsg)}</p>`:''}
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><option value="">Match device</option><option value="light" ${st.theme==='light'?'selected':''}>Light</option><option value="dark" ${st.theme==='dark'?'selected':''}>Dark</option><option value="sukuna" ${st.theme==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${st.theme==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${st.theme==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${st.theme==='ultra'?'selected':''}>Ultra Instinct</option><option value="todoroki" ${st.theme==='todoroki'?'selected':''}>Todoroki</option></select></div></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><optgroup label="Standard"><option value="" ${cur===''?'selected':''}>Match device</option><option value="light" ${cur==='light'?'selected':''}>Light</option><option value="dark" ${cur==='dark'?'selected':''}>Dark</option></optgroup><optgroup label="Characters"><option value="sukuna" ${cur==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${cur==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${cur==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${cur==='ultra'?'selected':''}>Ultra Instinct</option><option value="todoroki" ${cur==='todoroki'?'selected':''}>Todoroki</option></optgroup><optgroup label="Animated · uses more battery"><option value="sukuna:anim" ${cur==='sukuna:anim'?'selected':''}>Sukuna (animated)</option><option value="gojo:anim" ${cur==='gojo:anim'?'selected':''}>Gojo (animated)</option><option value="itachi:anim" ${cur==='itachi:anim'?'selected':''}>Itachi (animated)</option><option value="ultra:anim" ${cur==='ultra:anim'?'selected':''}>Ultra Instinct (animated)</option><option value="todoroki:anim" ${cur==='todoroki:anim'?'selected':''}>Todoroki (animated)</option></optgroup></select></div>
+    <div class="field"><label>Background image</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="bgpick">${bgInfo?'Change':'Choose'}</button>${bgInfo?'<button class="btn sm danger" data-a="bgdel">Remove</button>':''}</div></div>
+    ${bgInfo?`<div class="field"><label>Dim image</label><input type="range" min="0" max="0.9" step="0.05" value="${bgDim()}" data-f="bgdim" aria-label="Dim background image"></div>`:''}
+    <p class="muted" style="margin:0 0 6px">${ui.bgMsg?esc(ui.bgMsg)+' ':''}For the ${esc(THEME_NAMES[S.settings.theme||''])} theme. Kept on this phone only, not in backups.${bgInfo&&bgInfo.type==='image/gif'?' Animated GIFs use more battery.':''}</p></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
@@ -730,6 +800,8 @@ document.addEventListener('click',ev=>{
       } else ui.confirm='import';
       break;
     case 'share': shareBackup(); return;
+    case 'bgpick': $('#bgfile').click(); return;
+    case 'bgdel': bgStore.del(bgKey()).then(applyBg); return;
     case 'gsync': G.armed=true; G.found=''; saveG(); syncGist(true); break;
     case 'grestore': if(keep==='grestore'){ restoreGist(); return; } ui.confirm='grestore'; break;
     case 'gdisc': if(keep==='gdisc'){ G={token:'',id:'',armed:false,last:0,err:'',hash:'',found:''}; saveG(); } else ui.confirm='gdisc'; break;
@@ -739,6 +811,7 @@ document.addEventListener('click',ev=>{
 });
 // workout note: save as you type, without re-rendering (a re-render on blur would swallow the Finish tap)
 document.addEventListener('input',ev=>{
+  if(ev.target.dataset.f==='bgdim') document.documentElement.style.setProperty('--bg-dim',ev.target.value);
   if(ev.target.id==='note'&&S.active){ S.active.note=ev.target.value; save(); }
   const hs=ev.target.dataset.hnote&&S.sessions.find(x=>x.id===ev.target.dataset.hnote);
   if(hs){ if(ev.target.value.trim()) hs.note=ev.target.value; else delete hs.note; save(); }
@@ -771,7 +844,14 @@ document.addEventListener('change',ev=>{
     case 'rest': { const n=parseInt(v,10); if(n>0) S.settings.rest=n; break; }
     case 'restFail': { const n=parseInt(v,10); if(n>0) S.settings.restFail=n; break; }
     case 'plates': { const p=v.split(',').map(x=>parseFloat(x)).filter(x=>x>0); if(p.length) S.settings.plates=p; break; }
-    case 'theme': S.settings.theme=v; applyTheme(); break;
+    case 'theme': { const [t,a]=v.split(':'); S.settings.theme=t; S.settings.anim=a==='anim'; ui.bgMsg=''; applyTheme(); break; }
+    case 'bgfile': {
+      const f=el.files&&el.files[0]; el.value=''; if(!f) return;
+      if(!/^image\//.test(f.type)){ ui.bgMsg='That file isn\u2019t an image.'; break; }
+      if(f.size>25e6){ ui.bgMsg='That image is over 25 MB; pick a smaller one.'; break; }
+      ui.bgMsg=''; bgStore.set(bgKey(),f).then(applyBg).catch(()=>{ ui.bgMsg='Couldn\u2019t save the image (phone storage full?).'; render(); });
+      return; }
+    case 'bgdim': S.settings.bgDim=Object.assign({},S.settings.bgDim,{[bgKey()]:+v}); document.documentElement.style.setProperty('--bg-dim',v); break;
     case 'gtoken': if(v.trim()){ G.token=v.trim(); G.id=''; G.armed=false; G.err=''; G.found=''; saveG(); connectGist(); } break;
     case 'ex': {
       const ex=getEx(d.id), k=d.k; if(!ex) break;

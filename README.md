@@ -9,7 +9,7 @@ Everything is in `index.html` (markup, styles, app code) plus `sw.js` (offline s
 - **Warm-ups** generated from the work weight: empty bar ×5, then about 40/60/80% for 5/3/2 reps. Exercises with "deadlift" in the name skip the empty bar. Per exercise: Auto or Off (default Auto when the exercise has a bar weight).
 - **Rest timer** that starts after each work set and after the last warm-up, beeps 10 s before and at the end, keeps the screen on, survives the app being closed, and switches to a longer rest after a missed set. Optional rest notifications (Settings) show "next set at …" while resting and alert you if the rest ends while you're out of the app; reliable on Android, limited on iPhone where iOS pauses web apps in the background.
 - **History** with a weight chart, heaviest weight and estimated 1RM (Epley), editable past workouts, and a note per workout. New PRs are called out when a workout is saved.
-- **Themes**: match device, light, dark, Sukuna, Gojo, Itachi, Ultra Instinct, Todoroki.
+- **Themes**: match device, light, dark, Sukuna, Gojo, Itachi, Ultra Instinct, Todoroki. Each character theme also has an animated variant (listed under "Animated · uses more battery"), and every theme can have its own background image or GIF picked from the phone (Settings → Background image), stored in IndexedDB on the device only and never in backups.
 
 ## Backup
 - **Auto backup to a GitHub Gist.** Create a classic token with only the `gist` scope (GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)) and paste it under Settings → Auto backup. The app writes a secret gist named `lift-backup.json` after each workout and when you leave the app with unsaved changes; failures retry later. Secret gists are unlisted, not private.
@@ -27,6 +27,7 @@ After changing any file, bump `CACHE` in `sw.js` (e.g. `lift-v21`) so installed 
 2. If it uses a Google Font, add it to `THEME_FONT` (loaded only when the theme is picked), and add the name to `THEMES`.
 3. Add an `<option>` to the Theme select in `vData()`.
 4. Optional: a `.set.fresh::after` animation inside the `prefers-reduced-motion:no-preference` block plays on the set just completed.
+5. Optional animated variant: style `:root[data-anim][data-theme="name"] #fx::before/::after` in that same block (animate only `transform`/`opacity`), and add the name to `ANIM_THEMES` and the "Animated" option group.
 
 ## Tests
 ```
