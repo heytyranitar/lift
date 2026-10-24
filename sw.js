@@ -1,5 +1,5 @@
 // Bump this when you change any file so phones pick up the new version.
-const CACHE = 'lift-v28';
+const CACHE = 'lift-v29';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -16,11 +16,20 @@ self.addEventListener('activate', e => {
 });
 
 // Lets the page show which version is running.
-// Tapping a rest notification brings the app back.
+// Tapping a rest notification brings the app back; its Done button logs the set without opening the app.
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-    .then(cs => cs.length ? cs[0].focus() : self.clients.openWindow('./')));
+  e.waitUntil(self.noteClick(e.notification, e.action));
+});
+// Separate from the listener so the tests can call it.
+self.noteClick = (n, action) => self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+  if (action === 'done' && n.data) {
+    const done = Object.assign({ at: Date.now() }, n.data);
+    // The app is still running in the background: it logs the set and posts the next notification.
+    if (cs.length) return cs[0].postMessage({ setDone: done });
+    return self.clients.openWindow('./?done=' + encodeURIComponent(JSON.stringify(done)));
+  }
+  return cs.length ? cs[0].focus() : self.clients.openWindow('./');
 });
 
 self.addEventListener('message', e => {

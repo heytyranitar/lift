@@ -316,6 +316,44 @@ test('rest notifications: "next set at" while resting, "Rest over" if it ends wh
   } finally { srv.close(); }
 });
 
+test('Done on a rest notification logs the next set and restarts the rest', async () => {
+  const srv = await serve();
+  try {
+    const { p, ctx, errs } = await open(srv.url);
+    await ctx.grantPermissions(['notifications'], { origin: srv.url });
+    await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 5000 });
+    await p.click('[data-tab=data]'); await p.selectOption('[data-f=notify]', '1'); await p.waitForTimeout(300);
+    const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent('serviceworker');
+    const note = () => p.evaluate(async () => (await (await navigator.serviceWorker.getRegistration()).getNotifications({ tag: 'lift-rest' }))
+      .map(n => ({ body: n.body, buttons: n.actions.map(a => a.title), data: n.data }))[0]);
+    // what tapping Done does in the service worker, on the notification as it was when tapped
+    const tapDone = data => sw.evaluate(data => self.noteClick({ data }, 'done'), data);
+    const squat = async () => (await state(p)).active.entries[0].sets;
+
+    await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=A]');
+    await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.waitForTimeout(300);
+    const first = await note();
+    eq([first.body, first.buttons], ['Next: Squat · set 2', ['Done · 5 reps']]);
+    await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); });
+    const before = Date.now();
+    await tapDone(first.data); await p.waitForTimeout(300);
+    eq(await squat(), [5, 5, null], 'set 2 logged at full reps');
+    ok((await state(p)).active.rest.start >= before, 'rest restarted from the tap');
+    eq((await note()).body, 'Next: Squat · set 3', 'notification moved on to the next set');
+
+    await tapDone(first.data); await p.waitForTimeout(300);
+    eq(await squat(), [5, 5, null], 'tapping an old notification again changes nothing');
+
+    // the app was closed: the service worker opens it with the set in the URL
+    const third = (await note()).data;
+    await p.goto(srv.url + '?done=' + encodeURIComponent(JSON.stringify({ ...third, at: Date.now() })));
+    eq(await squat(), [5, 5, 5], 'set 3 logged on opening');
+    eq(p.url(), srv.url, 'URL cleaned up');
+    eq((await note()).body, 'Next: Bench press · set 1');
+    return errs;
+  } finally { srv.close(); }
+});
+
 test('themes load cleanly; a removed theme falls back to the device setting', async () => {
   const { p, errs } = await open();
   await p.click('[data-tab=data]');

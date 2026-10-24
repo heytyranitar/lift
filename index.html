@@ -565,19 +565,33 @@ setInterval(tick,500);
 /* ---- rest notifications (Android): "next set at 10:42" while resting, an alert if the rest ends while you're away ---- */
 const notifyOn=()=>S.settings.notify&&'Notification' in window&&Notification.permission==='granted';
 const restReg=()=>'serviceWorker' in navigator?navigator.serviceWorker.getRegistration():Promise.resolve(null);
-function nextSetText(){
-  for(const e of (S.active?S.active.entries:[])){ const j=e.sets.indexOf(null); if(j>=0) return 'Next: '+e.name+' \u00b7 set '+(j+1); }
-  return 'All sets logged';
+// the next work set still to do, as {e: entry index, s: set index}
+function nextSet(){
+  const es=S.active?S.active.entries:[];
+  for(let i=0;i<es.length;i++){ const j=es[i].sets.indexOf(null); if(j>=0) return {e:i,s:j}; }
+  return null;
 }
+function nextSetText(){ const n=nextSet(); return n?'Next: '+S.active.entries[n.e].name+' \u00b7 set '+(n.s+1):'All sets logged'; }
 async function restNote(kind){
   try{
     const reg=await restReg(); if(!reg) return;
     if(kind==='clear'||!notifyOn()||!R){ (await reg.getNotifications({tag:'lift-rest'})).forEach(n=>n.close()); return; }
-    const at=new Date(R.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-    if(kind==='start') await reg.showNotification('Resting \u00b7 next set at '+at,{tag:'lift-rest',body:nextSetText(),icon:'icon-192.png',silent:true});
-    else await reg.showNotification('Rest over',{tag:'lift-rest',body:nextSetText(),icon:'icon-192.png',renotify:true,vibrate:[300,120,300,120,300]});
+    const at=new Date(R.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}), n=nextSet(), e=n&&S.active.entries[n.e];
+    // a Done button that logs that set at full reps; the service worker hands the tap back to setDone
+    const opts={tag:'lift-rest',body:nextSetText(),icon:'icon-192.png'};
+    if(n) Object.assign(opts,{actions:[{action:'done',title:'Done \u00b7 '+e.reps+' reps'}],data:{w:S.active.start,ex:e.exId,e:n.e,s:n.s}});
+    if(kind==='start') await reg.showNotification('Resting \u00b7 next set at '+at,Object.assign(opts,{silent:true}));
+    else await reg.showNotification('Rest over',Object.assign(opts,{renotify:true,vibrate:[300,120,300,120,300]}));
   }catch(e){}
 }
+// Done on a rest notification: log that set at full reps and rest from the moment it was tapped
+function setDone(d){
+  const a=S.active, e=a&&d&&a.start===d.w&&a.entries[d.e];
+  if(!e||e.exId!==d.ex||e.sets[d.s]!==null) return; // another workout's notification, or the set was logged meanwhile
+  e.sets[d.s]=e.reps; startRest(false,isNum(d.at)&&d.at<=Date.now()?d.at:Date.now());
+  a.rest=R; syncRest(); save(); render();
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.setDone) setDone(ev.data.setDone); });
 let restKey, restTimer=0; // restKey starts undefined so the first sync also clears a leftover notification
 // called after every tap: post or clear the notification when the rest changes, and wake up exactly when it ends
 function syncRest(){
@@ -884,6 +898,8 @@ document.addEventListener('change',ev=>{
 window.liftBusy=()=>!!S.active;
 syncRest(); // reopened mid-rest: re-arm the end alert
 window.setVer=v=>{ VER=v; const el=$('#ver'); if(el) el.textContent=v; };
+// Done was tapped while the app was closed: the service worker opened it with the set in the URL
+try{ const q=new URLSearchParams(location.search).get('done'); if(q){ history.replaceState(null,'',location.pathname); setDone(JSON.parse(q)); } }catch(e){}
 render();
 })();
 </script>
