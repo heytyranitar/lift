@@ -333,7 +333,7 @@ test('Done on a rest notification logs the next set and restarts the rest', asyn
     await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=A]');
     await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.waitForTimeout(300);
     const first = await note();
-    eq([first.body, first.buttons], ['Next: Squat · set 2', ['Done · 5 reps']]);
+    eq([first.body, first.buttons], ['Next: Squat · set 2', ['Done']]);
     await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); });
     const before = Date.now();
     await tapDone(first.data); await p.waitForTimeout(300);

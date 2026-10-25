@@ -579,7 +579,7 @@ async function restNote(kind){
     const at=new Date(R.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}), n=nextSet(), e=n&&S.active.entries[n.e];
     // a Done button that logs that set at full reps; the service worker hands the tap back to setDone
     const opts={tag:'lift-rest',body:nextSetText(),icon:'icon-192.png'};
-    if(n) Object.assign(opts,{actions:[{action:'done',title:'Done \u00b7 '+e.reps+' reps'}],data:{w:S.active.start,ex:e.exId,e:n.e,s:n.s}});
+    if(n) Object.assign(opts,{actions:[{action:'done',title:'Done'}],data:{w:S.active.start,ex:e.exId,e:n.e,s:n.s}});
     if(kind==='start') await reg.showNotification('Resting \u00b7 next set at '+at,Object.assign(opts,{silent:true}));
     else await reg.showNotification('Rest over',Object.assign(opts,{renotify:true,vibrate:[300,120,300,120,300]}));
   }catch(e){}
