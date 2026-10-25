@@ -201,6 +201,15 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 .li span{flex:1}
 .chart{width:100%;height:auto;display:block}
 .sess+.sess{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.btn:disabled{opacity:.4;cursor:default}
+/* History calendar: workout days carry the template letter */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px;text-align:center}
+.cal-wd{font-size:12px;font-weight:600;color:var(--muted)}
+.cal-d{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;padding:5px 0;border:0;border-radius:10px;background:transparent;font:500 13px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums}
+button.cal-d{color:var(--ink)}
+.cal-d b{min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--ok);color:var(--ok-ink,#fff);font:700 14px/22px var(--head)}
+.cal-d.today{box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-d:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .line{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-variant-numeric:tabular-nums}
 .empty{margin:30px 20px;text-align:center;color:var(--muted)}
 /* a background image picked in Settings (per theme, stored on the phone), dimmed toward the theme's own background */
@@ -210,6 +219,9 @@ textarea.note{min-height:72px;font:500 16px/1.4 var(--body);resize:vertical}
 :root[data-bgimg] #bgimg{display:block}
 input[type=range]{width:100%;accent-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
+  /* a workout picked on the calendar lights up briefly */
+  .sess.flash{border-radius:8px;animation:flash 1.6s ease-out}
+  @keyframes flash{from{background:color-mix(in srgb,var(--accent) 22%,transparent)}to{background:transparent}}
   /* Sukuna: a quick slash across a set as you complete it */
   :root[data-theme="sukuna"] .set.fresh{position:relative;overflow:hidden}
   :root[data-theme="sukuna"] .set.fresh::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
@@ -661,17 +673,36 @@ function bests(exId){
   for(const s of S.sessions) for(const e of s.entries) if(e.exId===exId){ const x=entryBest(e); b.heavy=Math.max(b.heavy,x.heavy); b.e1=Math.max(b.e1,x.e1); b.n++; }
   return b;
 }
+/* ---- calendar: one month, workout days marked with the template letter; tapping one finds it in the list ---- */
+const dayKey=t=>{ const d=new Date(t); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); };
+function calHtml(){
+  const now=new Date(), cur=now.getFullYear()*12+now.getMonth();
+  if(ui.cal==null||ui.cal>cur) ui.cal=cur; // months counted from year 0, so ±1 crosses years
+  const y=Math.floor(ui.cal/12), m=ui.cal%12, first=new Date(y,m,1), days=new Date(y,m+1,0).getDate(), byDay={};
+  for(const s of S.sessions){ const k=dayKey(s.date); (byDay[k]=byDay[k]||[]).push(s); }
+  let h=`<div class="card"><div class="row"><button class="btn sm" data-a="cal" data-d="-1" aria-label="Previous month">‹</button>
+    <div class="name">${esc(first.toLocaleDateString(undefined,{month:'long',year:'numeric'}))}</div>
+    <button class="btn sm" data-a="cal" data-d="1" aria-label="Next month" ${ui.cal>=cur?'disabled':''}>›</button></div><div class="cal">`;
+  for(let i=0;i<7;i++) h+=`<span class="cal-wd">${esc(new Date(2023,0,1+i).toLocaleDateString(undefined,{weekday:'narrow'}))}</span>`; // 1 Jan 2023 was a Sunday
+  h+='<span></span>'.repeat(first.getDay());
+  for(let d=1;d<=days;d++){
+    const k=y+'-'+m+'-'+d, ss=byDay[k], cls='cal-d'+(ui.cal===cur&&d===now.getDate()?' today':'');
+    h+=ss?`<button class="${cls}" data-a="calday" data-k="${k}" aria-label="${esc(fmtDate(ss[0].date)+': '+ss.map(s=>s.name).join(', '))}"><span>${d}</span><b>${esc(ss.map(s=>s.tid).join(''))}</b></button>`
+      :`<span class="${cls}"><span>${d}</span></span>`;
+  }
+  return h+'</div></div>';
+}
 function vHist(){
-  let h='';
+  if(!S.sessions.length) return '<div class="empty">No workouts yet. Finish one and it shows up here.</div>';
+  let h=calHtml();
   const withData=S.ex.filter(e=>loggedWeights(e.id).length);
   if(withData.length){
     if(!withData.find(e=>e.id===ui.chart)) ui.chart=withData[0].id;
     h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${chartSvg(loggedWeights(ui.chart))}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> · Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ui.chart))}</div>`;
   }
-  if(!S.sessions.length) return h+'<div class="empty">No workouts yet. Finish one and it shows up here.</div>';
   h+='<div class="card">';
   for(const s of [...S.sessions].reverse()){
-    h+=`<div class="sess"><div class="row"><div class="name">${esc(s.name)}</div><span class="muted">${fmtDate(s.date)}${s.dur?' · '+fmtMin(s.dur):''}</span></div>`;
+    h+=`<div class="sess${ui.flashDay&&dayKey(s.date)===ui.flashDay?' flash':''}"><div class="row"><div class="name">${esc(s.name)}</div><span class="muted">${fmtDate(s.date)}${s.dur?' · '+fmtMin(s.dur):''}</span></div>`;
     if(ui.editSess===s.id){
       s.entries.forEach((e,i)=>{ h+=`<div class="hrow"><b>${esc(e.name)}</b><input class="mini" type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="hw" data-sid="${s.id}" data-e="${i}" aria-label="${esc(e.name)} weight"><span class="unit">lb</span><span class="muted">reps</span>
         ${e.sets.map((v,j)=>`<input class="mini" type="number" inputmode="numeric" min="0" value="${v==null?'':v}" placeholder="–" data-f="hset" data-sid="${s.id}" data-e="${i}" data-s="${j}" aria-label="Set ${j+1} reps">`).join('')}</div>`; });
@@ -754,6 +785,8 @@ function vData(){
 function render(){
   const v={today:vToday,hist:vHist,plan:vPlan,data:vData}[ui.tab]();
   $('#view').innerHTML=v; ui.fresh='';
+  const fl=ui.flashDay&&$('.sess.flash'); ui.flashDay='';
+  if(fl) fl.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   tick(); wake();
 }
@@ -766,7 +799,9 @@ document.addEventListener('click',ev=>{
   const imp=$('#imp'); if(imp) ui.imp=imp.value; // re-render below would wipe the pasted text
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.cal=null; break;
+    case 'cal': ui.cal+=+d.d; break;
+    case 'calday': ui.flashDay=d.k; break;
     case 'start': {
       const t=S.templates.find(x=>x.id===d.t); if(!t) break;
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);

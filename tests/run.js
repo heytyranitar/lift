@@ -354,6 +354,37 @@ test('Done on a rest notification logs the next set and restarts the rest', asyn
   } finally { srv.close(); }
 });
 
+test('calendar: workout days marked by template, months step back, a tapped day is found in the list', async () => {
+  const { p, errs } = await open();
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const at = (mo, d) => new Date(y, mo, d, 12).getTime();
+  const sess = (id, date, tid) => ({ id, date, tid, name: 'Workout ' + tid, entries: [entry('squat', 'Squat', 185, [5, 5, 5])] });
+  await withState(p, s => {
+    for (let i = 0; i < 12; i++) s.sessions.push(sess('old' + i, at(m - 3, 1 + i), 'A')); // pushes the list down so the target needs a scroll
+    s.sessions.push(sess('prev', at(m - 1, 15), 'B'), sess('d1', at(m, 1), 'A'), sess('d2b', at(m, 2), 'B'), sess('d2c', at(m, 2), 'C'));
+  });
+  await p.click('[data-tab=hist]');
+  const title = () => p.textContent('.card .name');
+  const marked = () => p.$$eval('button.cal-d', b => b.map(x => x.querySelector('span').textContent + ':' + x.querySelector('b').textContent));
+  eq(await title(), now.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+  eq(await marked(), ['1:A', '2:BC'], 'two workouts on one day show both letters');
+  eq(await p.textContent('.cal-d.today span'), String(now.getDate()));
+  ok(await p.isDisabled('[data-a=cal][data-d="1"]'), 'no stepping into future months');
+
+  await p.click('[data-a=cal][data-d="-1"]');
+  eq(await title(), new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+  eq(await marked(), ['15:B']);
+  eq(await p.$$eval('.cal-d.today', t => t.length), 0, 'today only outlined in its own month');
+  await p.click('button.cal-d');
+  await p.waitForTimeout(800); // smooth scroll
+  eq(await texts(p, '.sess.flash .name'), ['Workout B']);
+  ok(await p.$eval('.sess.flash', el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'scrolled into view');
+
+  await p.click('[data-tab=today]'); await p.click('[data-tab=hist]');
+  eq(await marked(), ['1:A', '2:BC'], 'back on the current month after leaving History');
+  return errs;
+});
+
 test('themes load cleanly; a removed theme falls back to the device setting', async () => {
   const { p, errs } = await open();
   await p.click('[data-tab=data]');
