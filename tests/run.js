@@ -173,6 +173,32 @@ test('rest timer: normal rest, longer after a miss, survives a reload', async ()
   return errs;
 });
 
+test('timer sounds are soft sine bells, quiet, and can be turned off', async () => {
+  const stub = () => {
+    window.__osc = []; window.__peak = 0;
+    window.AudioContext = class {
+      constructor() { this.currentTime = 0; this.state = 'running'; this.destination = {}; }
+      createOscillator() { const o = { type: '', frequency: { value: 0 }, connect() {}, start() {}, stop() {} }; window.__osc.push(o); return o; }
+      createGain() { const r = v => { window.__peak = Math.max(window.__peak, v); }; return { connect() {}, gain: { setValueAtTime: r, linearRampToValueAtTime: r, exponentialRampToValueAtTime: r } }; }
+      resume() {}
+    };
+  };
+  const run = async sound => {
+    const { p, ctx, errs } = await open();
+    await ctx.addInitScript(stub); await p.reload();
+    await withState(p, s => { s.settings.rest = 2; if (sound) s.settings.sound = sound; });
+    await p.click('[data-a=start][data-t=A]'); await p.click('[data-a=set][data-e="0"][data-s="0"]');
+    await p.waitForTimeout(2800); // the 10-second warning fires straight away on a 2 s rest, then the end-of-rest chime
+    return { errs, osc: await p.evaluate(() => window.__osc.map(o => [o.type, Math.round(o.frequency.value)])), peak: await p.evaluate(() => window.__peak) };
+  };
+  const on = await run('');
+  eq(on.osc, [['sine', 660], ['sine', 659], ['sine', 880]], 'one quiet warning note, then a two-note chime');
+  ok(on.peak > 0 && on.peak <= 0.2, 'quiet: peak gain ' + on.peak);
+  const off = await run('off');
+  eq(off.osc, [], 'Off makes no sound');
+  return [...on.errs, ...off.errs];
+});
+
 test('workout note: saved as you type, Finish works in one tap, shown in History', async () => {
   const { p, errs } = await open();
   await p.click('[data-a=start][data-t=A]');
