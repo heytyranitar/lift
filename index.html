@@ -591,7 +591,9 @@ async function restNote(kind){
     const at=new Date(R.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}), n=nextSet(), e=n&&S.active.entries[n.e];
     // a Done button that logs that set at full reps; the service worker hands the tap back to setDone
     const opts={tag:'lift-rest',body:nextSetText(),icon:'icon-192.png'};
-    if(n) Object.assign(opts,{actions:[{action:'done',title:'Done'}],data:{w:S.active.start,ex:e.exId,e:n.e,s:n.s}});
+    // q: the sets after this one, so the service worker can post the next notification itself when the page is asleep
+    const q=[]; if(n) S.active.entries.forEach((x,i)=>x.sets.forEach((v,j)=>{ if(v===null&&(i>n.e||(i===n.e&&j>n.s))) q.push({ex:x.exId,e:i,s:j,t:'Next: '+x.name+' \u00b7 set '+(j+1)}); }));
+    if(n) Object.assign(opts,{actions:[{action:'done',title:'Done'}],data:{w:S.active.start,ex:e.exId,e:n.e,s:n.s,q,r:S.settings.rest}});
     if(kind==='start') await reg.showNotification('Resting \u00b7 next set at '+at,Object.assign(opts,{silent:true}));
     else await reg.showNotification('Rest over',Object.assign(opts,{renotify:true,vibrate:[300,120,300,120,300]}));
   }catch(e){}

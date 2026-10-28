@@ -354,6 +354,39 @@ test('Done on a rest notification logs the next set and restarts the rest', asyn
   } finally { srv.close(); }
 });
 
+test('Done still works when the phone has put the app to sleep: the service worker posts the next notification itself', async () => {
+  const srv = await serve();
+  try {
+    const { p, ctx, errs } = await open(srv.url);
+    await ctx.grantPermissions(['notifications'], { origin: srv.url });
+    await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 5000 });
+    await p.click('[data-tab=data]'); await p.selectOption('[data-f=notify]', '1'); await p.waitForTimeout(300);
+    const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent('serviceworker');
+    await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=A]');
+    await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.waitForTimeout(300);
+    // tap Done the way the phone does: close the notification, then run the handler, with a page that never answers
+    const tapDone = () => sw.evaluate(async () => {
+      const [n] = await self.registration.getNotifications({ tag: 'lift-rest' });
+      n.close();
+      const real = self.clients.matchAll; self.clients.matchAll = async () => [{ postMessage() {}, focus() {} }];
+      try { await self.noteClick(n, 'done'); } finally { self.clients.matchAll = real; }
+    });
+    const note = () => sw.evaluate(async () => (await self.registration.getNotifications({ tag: 'lift-rest' }))
+      .map(n => ({ title: n.title, body: n.body, buttons: n.actions.map(a => a.title) }))[0]);
+    await tapDone();
+    const second = await note();
+    ok(/^Resting · next set at .+/.test(second.title), 'a Resting notification is still there, got: ' + JSON.stringify(second));
+    eq([second.body, second.buttons], ['Next: Squat · set 3', ['Done']]);
+    // and it keeps chaining, set by set, through to the end of the workout (12 sets after the first)
+    for (let i = 0; i < 10; i++) await tapDone(); // 11 taps so far; the 13th and last set of the workout is next
+    eq(await note().then(n => [n.body, n.buttons]), ['Next: Pendlay row · set 5', ['Done']]);
+    await tapDone();
+    eq(await note().then(n => [n.body, n.buttons]), ['All sets logged', []], 'last set: nothing left to tap');
+    eq((await state(p)).active.entries[0].sets, [5, null, null], 'the page never got to run, so nothing is logged yet');
+    return errs;
+  } finally { srv.close(); }
+});
+
 test('calendar: workout days marked by template, months step back, a tapped day is found in the list', async () => {
   const { p, errs } = await open();
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();

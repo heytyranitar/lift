@@ -1,5 +1,5 @@
 // Bump this when you change any file so phones pick up the new version.
-const CACHE = 'lift-v31';
+const CACHE = 'lift-v32';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -25,9 +25,16 @@ self.addEventListener('notificationclick', e => {
 self.noteClick = (n, action) => self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
   if (action === 'done' && n.data) {
     const done = Object.assign({ at: Date.now() }, n.data);
-    // The app is still running in the background: it logs the set and posts the next notification.
-    if (cs.length) return cs[0].postMessage({ setDone: done });
-    return self.clients.openWindow('./?done=' + encodeURIComponent(JSON.stringify(done)));
+    if (!cs.length) return self.clients.openWindow('./?done=' + encodeURIComponent(JSON.stringify(done)));
+    // The app is in the background: it logs the set and posts the next notification, as soon as it is running.
+    cs[0].postMessage({ setDone: done });
+    // A phone that has put the app to sleep won't run it until it is reopened, which would leave no notification at all.
+    // So post the next one here, from what the tapped one carried.
+    const q = n.data.q || [], next = q[0], r = (n.data.r || 120) * 1000;
+    const at = new Date(done.at + r).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return self.registration.showNotification('Resting \u00b7 next set at ' + at, Object.assign({ tag: 'lift-rest', icon: 'icon-192.png', silent: true,
+      body: next ? next.t : 'All sets logged' },
+      next ? { actions: [{ action: 'done', title: 'Done' }], data: { w: n.data.w, ex: next.ex, e: next.e, s: next.s, q: q.slice(1), r: n.data.r } } : {}));
   }
   return cs.length ? cs[0].focus() : self.clients.openWindow('./');
 });
