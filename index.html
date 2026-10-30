@@ -218,6 +218,15 @@ button.cal-d{color:var(--ink)}
 #bgimg::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:var(--bg-dim,.55)}
 :root[data-bgimg] #bgimg{display:block}
 input[type=range]{width:100%;accent-color:var(--accent)}
+.rng{display:flex;gap:4px;margin:10px 0 2px}
+.rng button{flex:1;border:0;border-bottom:2px solid transparent;background:transparent;padding:8px 0;min-height:40px;font:700 16px/1 var(--head);color:var(--muted)}
+.rng button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.chips{display:flex;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 14px;min-height:36px;font-weight:600;font-size:14px;color:var(--muted)}
+.chip.on{background:var(--soft);color:var(--ink);border-color:var(--accent)}
+.rng button:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chead{margin-top:10px}.chead b{font:700 34px/1 var(--head);font-variant-numeric:tabular-nums}
+.chart{touch-action:manipulation}
 @media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
   /* a workout picked on the calendar lights up briefly */
   .sess.flash{border-radius:8px;animation:flash 1.6s ease-out}
@@ -656,18 +665,55 @@ function vActive(){
       <button class="btn primary" data-a="finish">Finish workout</button></div>`;
   return h;
 }
-function loggedWeights(exId){
-  const pts=[]; for(const s of S.sessions) for(const e of s.entries) if(e.exId===exId) pts.push({d:s.date,w:e.weight});
-  return pts;
+const hasLogged=exId=>S.sessions.some(x=>x.entries.some(e=>e.exId===exId));
+/* ---- progress chart: one exercise's weight or estimated 1RM over a chosen range ---- */
+const RANGES={'1M':1,'3M':3,'6M':6,'1Y':12,'All':0};
+function chartPoints(exId,metric,range){
+  const pts=[];
+  for(const s of S.sessions) for(const e of s.entries) if(e.exId===exId){ const v=metric==='e1'?entryBest(e).e1:e.weight; if(v>0) pts.push({d:s.date,v}); }
+  pts.sort((a,b)=>a.d-b.d);
+  const m=RANGES[range]; if(!m) return pts;
+  const cut=new Date(); cut.setMonth(cut.getMonth()-m);
+  return pts.filter(p=>p.d>=cut.getTime());
 }
-function chartSvg(pts){
-  if(pts.length<2) return '<div class="muted" style="padding:8px 0">Log this lift in two or more sessions to see a chart.</div>';
-  const W=320,H=120,p=14, ws=pts.map(x=>x.w), lo=Math.min(...ws), hi=Math.max(...ws), span=(hi-lo)||1;
-  const X=i=>p+i*(W-2*p)/(pts.length-1), Y=w=>H-p-(w-lo)*(H-2*p)/span;
-  const d=pts.map((q,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(q.w).toFixed(1)).join(' ');
-  const dots=pts.map((q,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(q.w).toFixed(1)}" r="3" fill="var(--accent)"/>`).join('');
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight over time"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>${dots}
-    <text x="${p}" y="11" fill="var(--muted)" font-size="11">${fw(hi)} lb</text><text x="${p}" y="${H-2}" fill="var(--muted)" font-size="11">${fw(lo)} lb</text></svg>`;
+function niceTicks(lo,hi){
+  if(hi-lo<=0){ lo-=5; hi+=5; }
+  const step=[1,2,2.5,5,10,20,25,50,100,200,250,500].find(x=>(hi-lo)/x<=4)||1000, t=[];
+  for(let v=Math.floor(lo/step)*step;v<=Math.ceil(hi/step)*step+1e-9;v+=step) t.push(v);
+  return t;
+}
+const CHART={W:320,H:180,L:6,R:38,T:10,B:22};
+function chartXs(pts){
+  const {W,L,R}=CHART, t0=pts[0].d, sp=(pts[pts.length-1].d-t0)||1;
+  return pts.map(p=>L+(p.d-t0)/sp*(W-L-R));
+}
+function chartSvg(pts,sel){
+  const {W,H,L,R,T,B}=CHART, vs=pts.map(p=>p.v), ticks=niceTicks(Math.min(...vs),Math.max(...vs)), y0=ticks[0], y1=ticks[ticks.length-1];
+  const xs=chartXs(pts), Y=v=>H-B-(v-y0)/(y1-y0)*(H-B-T), n=pts.length;
+  const line=pts.map((p,i)=>(i?'L':'M')+xs[i].toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+  const area=line+` L${xs[n-1].toFixed(1)} ${H-B} L${xs[0].toFixed(1)} ${H-B} Z`;
+  const long=pts[n-1].d-pts[0].d>300*864e5, lab=t=>new Date(t).toLocaleDateString(undefined,long?{month:'short',year:'2-digit'}:{month:'short',day:'numeric'});
+  let g=ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${W-R+5}" y="${(Y(v)+3.5).toFixed(1)}" fill="var(--muted)" font-size="10">${fw(Math.round(v*10)/10)}</text>`).join('');
+  const mid=(pts[0].d+pts[n-1].d)/2;
+  g+=`<text x="${L}" y="${H-6}" fill="var(--muted)" font-size="10">${esc(lab(pts[0].d))}</text><text x="${(W-R+L)/2}" y="${H-6}" fill="var(--muted)" font-size="10" text-anchor="middle">${esc(lab(mid))}</text><text x="${W-R}" y="${H-6}" fill="var(--muted)" font-size="10" text-anchor="end">${esc(lab(pts[n-1].d))}</text>`;
+  const dots=n<=60?pts.map((p,i)=>`<circle class="pt" cx="${xs[i].toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2.6" fill="var(--accent)"/>`).join(''):'';
+  const sx=xs[sel].toFixed(1), sy=Y(pts[sel].v).toFixed(1);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Progress chart" data-a="cplot" data-xs="${xs.map(x=>x.toFixed(1)).join(',')}">
+    <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.35"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>${g}
+    <path d="${area}" fill="url(#cg)"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>${dots}
+    <line x1="${sx}" x2="${sx}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+    <circle class="sel" cx="${sx}" cy="${sy}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>`;
+}
+function progressHtml(exId){
+  const metric=ui.cm||'w', range=ui.cr||'3M', pts=chartPoints(exId,metric,range), many=pts.length>=2;
+  const sel=many?Math.min(ui.csel==null?pts.length-1:ui.csel,pts.length-1):-1;
+  let h=`<div class="rng" role="group" aria-label="Range">${Object.keys(RANGES).map(k=>`<button class="${k===range?'on':''}" data-a="crange" data-r="${k}" aria-pressed="${k===range}">${k}</button>`).join('')}</div>`;
+  if(many){
+    const p=pts[sel], first=pts[0], dv=p.v-first.v, val=metric==='e1'?Math.round(p.v):fw(p.v), diff=metric==='e1'?Math.round(dv):fw(dv);
+    h+=`<div class="chead"><b>${val} lb</b><div class="muted">${esc(fmtDate(p.d))}${sel>0?` \u00b7 ${dv>=0?'+':'\u2212'}${Math.abs(diff)} lb ${range==='All'?'since the first workout':'over '+range}`:''}</div></div>${chartSvg(pts,sel)}`;
+  }else h+=`<div class="muted" style="padding:14px 0">${pts.length?'Only one workout':'No workouts'} in this range${range==='All'?'; log this lift again to see a chart':'. Try a longer range.'}</div>`;
+  h+=`<div class="chips"><button class="chip ${metric==='w'?'on':''}" data-a="cmetric" data-m="w" aria-pressed="${metric==='w'}">Weight</button><button class="chip ${metric==='e1'?'on':''}" data-a="cmetric" data-m="e1" aria-pressed="${metric==='e1'}">Est. 1RM</button></div>`;
+  return h;
 }
 const e1rm=(w,r)=>r>0?(r===1?w:w*(1+r/30)):0; // Epley estimate
 function entryBest(e){ return {heavy:e.sets.some(v=>v>0)?e.weight:0, e1:Math.max(0,...e.sets.map(v=>e1rm(e.weight,v||0)))}; }
@@ -698,10 +744,10 @@ function calHtml(){
 function vHist(){
   if(!S.sessions.length) return '<div class="empty">No workouts yet. Finish one and it shows up here.</div>';
   let h=calHtml();
-  const withData=S.ex.filter(e=>loggedWeights(e.id).length);
+  const withData=S.ex.filter(e=>hasLogged(e.id));
   if(withData.length){
     if(!withData.find(e=>e.id===ui.chart)) ui.chart=withData[0].id;
-    h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${chartSvg(loggedWeights(ui.chart))}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> · Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ui.chart))}</div>`;
+    h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${progressHtml(ui.chart)}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> · Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ui.chart))}</div>`;
   }
   h+='<div class="card">';
   for(const s of [...S.sessions].reverse()){
@@ -811,6 +857,11 @@ document.addEventListener('click',ev=>{
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);
         return {exId:id,name:ex.name,weight:n.weight,nSets:n.sets,reps:n.reps,stage:n.stage,sets:Array(n.sets).fill(null)};}).filter(Boolean)};
       ui.toast=''; ui.pr=''; ui.toastSync=ui.toastShare=false; break; }
+    case 'crange': ui.cr=d.r; ui.csel=null; break;
+    case 'cmetric': ui.cm=d.m; ui.csel=null; break;
+    case 'cplot': { // tap the chart: select the workout nearest the tap
+      const r=el.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width*CHART.W, xs=el.dataset.xs.split(',').map(Number);
+      ui.csel=xs.reduce((b,v,i)=>Math.abs(v-x)<Math.abs(xs[b]-x)?i:b,0); break; }
     case 'hedit': ui.editSess=d.id; break;
     case 'hdone': ui.editSess=null; break;
     case 'wset': {
@@ -897,7 +948,7 @@ document.addEventListener('change',ev=>{
   }
   switch(d.f){
     case 'w': { const n=parseFloat(v); if(!isNaN(n)&&n>=0) S.active.entries[+d.e].weight=n; break; }
-    case 'chart': ui.chart=v; break;
+    case 'chart': ui.chart=v; ui.csel=null; break;
     case 'wake': S.settings.wake=v==='1'; break;
     case 'notify':
       ui.notifyMsg='';

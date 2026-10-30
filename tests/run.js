@@ -199,6 +199,37 @@ test('timer sounds are soft sine bells, quiet, and can be turned off', async () 
   return [...on.errs, ...off.errs];
 });
 
+test('progress chart: ranges, weight / est. 1RM, tap to select a workout', async () => {
+  const { p, errs } = await open();
+  const weights = [[400, 135], [200, 145], [120, 155], [70, 165], [20, 175], [5, 185]];
+  await withState(p, s => { s.sessions = weights.map(([d, w]) => session(d, [entry('squat', 'Squat', w, [5, 5, 5])])); });
+  await p.click('[data-tab=hist]');
+  const dots = () => p.$$eval('svg.chart circle.pt', c => c.length);
+  const head = () => p.textContent('.chead');
+  eq(await p.$$eval('.rng button', b => b.map(x => x.textContent)), ['1M', '3M', '6M', '1Y', 'All']);
+  eq(await p.$eval('.rng .on', b => b.textContent), '3M', 'defaults to 3 months');
+  const counts = {};
+  for (const r of ['1M', '3M', '6M', '1Y', 'All']) { await p.click(`[data-a=crange][data-r="${r}"]`); counts[r] = await dots(); }
+  eq(counts, { '1M': 2, '3M': 3, '6M': 4, '1Y': 5, 'All': 6 }, 'workouts per range');
+  ok((await head()).startsWith('185 lb'), 'headline starts on the latest workout, got ' + await head());
+  ok((await head()).includes('+50 lb since the first workout'), 'All: change since the first workout, got ' + await head());
+  await p.click('[data-a=crange][data-r="3M"]');
+  ok((await head()).includes('+20 lb over 3M'), 'change over the range, got ' + await head());
+  // tap the left end of the chart: the oldest workout in range is selected
+  const box = await p.locator('svg.chart').boundingBox(), xs = (await p.getAttribute('svg.chart', 'data-xs')).split(',').map(Number);
+  await p.click('svg.chart', { position: { x: xs[0] / 320 * box.width, y: 60 } });
+  eq((await head()).startsWith('165 lb'), true, 'selected the first workout, got ' + await head());
+  await p.click('[data-a=cmetric][data-m=e1]');
+  eq((await head()).startsWith(Math.round(185 * (1 + 5 / 30)) + ' lb'), true, 'est. 1RM of the latest, got ' + await head());
+  eq(await p.$eval('.chip.on', b => b.textContent), 'Est. 1RM');
+  // a single workout in range gives a message, not a chart
+  await withState(p, s => { s.sessions = [session(5, [entry('squat', 'Squat', 185, [5, 5, 5])])]; });
+  await p.click('[data-tab=hist]');
+  ok((await p.textContent('.rng + .muted')).includes('Only one workout in this range'), 'one workout: message instead of a chart');
+  ok((await p.textContent('.stats')).startsWith('Heaviest: '), 'best-lifts line still shown');
+  return errs;
+});
+
 test('workout note: saved as you type, Finish works in one tap, shown in History', async () => {
   const { p, errs } = await open();
   await p.click('[data-a=start][data-t=A]');
