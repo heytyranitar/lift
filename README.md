@@ -9,7 +9,7 @@ Everything is in `index.html` (markup, styles, app code) plus `sw.js` (offline s
 - **Warm-ups** generated from the work weight: empty bar ×5, then about 40/60/80% for 5/3/2 reps. Exercises with "deadlift" in the name skip the empty bar. Per exercise: Auto, One light set (about 60% ×5, e.g. for curls) or Off (default Auto when the exercise has a bar weight).
 - **Rest timer** that starts after each work set and after the last warm-up, chimes softly 10 s before and at the end (a quiet note, then a two-note chime; Settings can turn the sound off, leaving vibration), keeps the screen on, survives the app being closed, and switches to a longer rest after a missed set. Optional rest notifications (Settings) show "next set at …" while resting and alert you if the rest ends while you're out of the app. Their Done button logs the next set at full reps and starts the next rest without opening the app (a missed set still needs the app); the service worker posts the next notification itself, so it keeps going even when Android has put the app to sleep. Notifications are reliable on Android; on iPhone they are limited because iOS pauses web apps in the background, and there is no Done button.
 - **History** with a month calendar (workout days marked with the template letter; tap one to jump to it), a progress chart per exercise (1M / 3M / 6M / 1Y / All, weight or estimated 1RM, tap to pick a workout and see the change over the range), heaviest weight and best estimated 1RM (Epley), editable past workouts, and a note per workout. New PRs are called out when a workout is saved.
-- **Themes**: match device, light, dark, Sukuna, Gojo, Itachi, Ultra Instinct, Todoroki. Every theme can have its own background image or GIF picked from the phone (Settings → Background image), stored in IndexedDB on the device only and never in backups.
+- **Themes**: match device, light, dark, and Gojo.
 
 ## Backup
 - **Auto backup to a GitHub Gist.** Create a classic token with only the `gist` scope (GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)) and paste it under Settings → Auto backup. The app writes a secret gist named `lift-backup.json` after each workout and when you leave the app with unsaved changes; failures retry later. Secret gists are unlisted, not private.
@@ -26,7 +26,7 @@ After changing any file, bump `CACHE` in `sw.js` (e.g. `lift-v21`) so installed 
 1. Add a `:root[data-theme="name"]{...}` block in `index.html` that sets every colour variable (`--bg`, `--surface`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--ok`, `--ok-ink`, `--miss`, `--soft`, `color-scheme`) and optionally `--head` for the heading font.
 2. If it uses a Google Font, add it to `THEME_FONT` (loaded only when the theme is picked), and add the name to `THEMES`.
 3. Add an `<option>` to the Theme select in `vData()`.
-4. Optional: a `.set.fresh::after` animation inside the `prefers-reduced-motion:no-preference` block plays on the set just completed.
+4. Optional: a `.set.fresh::after` animation inside the `prefers-reduced-motion:no-preference` block plays on the set just completed (see Gojo).
 
 ## Tests
 ```

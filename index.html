@@ -31,29 +31,6 @@
   --bg:#121519;--surface:#1B2026;--ink:#E8EAE6;--muted:#97A0A9;--line:#2B323A;
   --accent:#6C93FF;--accent-ink:#0B1020;--ok:#4CC38A;--miss:#F0805F;--soft:#252B33;color-scheme:dark;
 }
-/* Sukuna (Jujutsu Kaisen): black, bone and blood red, paired stripes after his markings */
-:root[data-theme="sukuna"]{
-  --bg:#0D0A0B;--surface:#171113;--ink:#EEE6DA;--muted:#A0928A;--line:#3A2427;
-  --accent:#DA3340;--accent-ink:#F7F0E6;--ok:#A8192A;--ok-ink:#F7F0E6;--miss:#4A4245;--soft:#241A1C;color-scheme:dark;
-  --head:"Shippori Mincho B1","Barlow Condensed",Georgia,serif;
-}
-:root[data-theme="sukuna"] body{background:
-  radial-gradient(1.5px 1.5px at 31px 57px,rgba(255,90,70,.6),transparent),radial-gradient(1px 1px at 143px 121px,rgba(255,140,90,.5),transparent),
-  radial-gradient(2px 2px at 97px 173px,rgba(218,51,64,.5),transparent),radial-gradient(1px 1px at 181px 23px,rgba(255,110,80,.45),transparent);
-  background-size:210px 210px;background-color:var(--bg);background-attachment:fixed}
-:root[data-theme="sukuna"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
-  background:radial-gradient(110% 42% at 50% -8%,rgba(170,20,35,.28),transparent 70%),radial-gradient(90% 28% at 50% 108%,rgba(120,10,20,.2),transparent 70%)}
-:root[data-theme="sukuna"] body::before{content:"\546A";position:fixed;right:-18px;bottom:44px;font:800 230px/1 var(--head);color:#DA3340;opacity:.05;pointer-events:none;z-index:-1}
-:root[data-theme="sukuna"] h1::after{content:"";display:block;width:34px;height:9px;margin-top:9px;background:linear-gradient(var(--accent) 0 3px,transparent 3px 6px,var(--accent) 6px);filter:drop-shadow(0 0 4px rgba(218,51,64,.8))}
-:root[data-theme="sukuna"] .card{position:relative;border-color:#3F262A;background:rgba(23,17,19,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,120,110,.08)}
-:root[data-theme="sukuna"] .card::before{content:"";position:absolute;left:-1px;top:16px;width:3px;height:20px;background:linear-gradient(var(--accent) 0 8px,transparent 8px 12px,var(--accent) 12px);filter:drop-shadow(0 0 3px rgba(218,51,64,.9))}
-:root[data-theme="sukuna"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),inset 0 5px 0 var(--surface),inset 0 7px 0 var(--accent),0 -8px 16px -10px rgba(218,51,64,.9)}
-:root[data-theme="sukuna"] .set.done{background:radial-gradient(circle at 50% 38%,#E3434F,#8E1020 72%);border-color:#E3434F;box-shadow:0 0 12px rgba(218,51,64,.45)}
-:root[data-theme="sukuna"] .btn.primary{background:linear-gradient(180deg,#E23A47,#B11F2C);border-color:#E23A47;box-shadow:0 0 14px rgba(218,51,64,.35)}
-:root[data-theme="sukuna"] .set.miss{border-color:var(--accent);color:var(--ink)}
-:root[data-theme="sukuna"] .btn.danger,:root[data-theme="sukuna"] .trend{color:#EC5A65}
-:root[data-theme="sukuna"] #rest{background:#160E10;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(218,51,64,.3)}
-:root[data-theme="sukuna"] #rest .btn{color:var(--ink);border-color:rgba(218,51,64,.5)}
 /* Gojo (Jujutsu Kaisen): Unlimited Void navy, white hair, Six Eyes blue, Hollow Purple misses */
 :root[data-theme="gojo"]{
   --bg:#070A12;--surface:#0F1522;--ink:#F2F6FF;--muted:#93A0BA;--line:#22304A;
@@ -76,69 +53,6 @@
 :root[data-theme="gojo"] .btn.danger,:root[data-theme="gojo"] .trend{color:#B9A3FF}
 :root[data-theme="gojo"] #rest{background:#0A101E;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(92,200,255,.3)}
 :root[data-theme="gojo"] #rest .btn{color:var(--ink);border-color:rgba(92,200,255,.45)}
-/* Itachi (Naruto): charcoal, Sharingan crimson, Tsukuyomi's red moon */
-:root[data-theme="itachi"]{
-  --bg:#0B0B0E;--surface:#141418;--ink:#EEEEF1;--muted:#9B9BA5;--line:#2B2B33;
-  --accent:#D41F30;--accent-ink:#FFFFFF;--ok:#B5121F;--ok-ink:#FFFFFF;--miss:#4B4B55;--soft:#212127;color-scheme:dark;
-  --head:"Kaisei Tokumin","Barlow Condensed",Georgia,serif;
-}
-:root[data-theme="itachi"] body{background:radial-gradient(130% 90% at 50% 35%,transparent 55%,rgba(0,0,0,.55)) fixed,var(--bg)}
-:root[data-theme="itachi"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
-  radial-gradient(circle at 88% 7%,rgba(212,31,48,.2) 0 44px,rgba(212,31,48,.07) 46px,transparent 150px),
-  repeating-radial-gradient(circle at 88% 7%,transparent 0 62px,rgba(212,31,48,.09) 62px 63px,transparent 63px 88px);
-  -webkit-mask:radial-gradient(circle at 88% 7%,#000 0 170px,transparent 360px);mask:radial-gradient(circle at 88% 7%,#000 0 170px,transparent 360px)}
-:root[data-theme="itachi"] .card{background:rgba(20,20,24,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
-:root[data-theme="itachi"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(212,31,48,.9)}
-:root[data-theme="itachi"] .btn.primary{background:linear-gradient(180deg,#E0303F,#A8121F);border-color:#E0303F;box-shadow:0 0 14px rgba(212,31,48,.35)}
-:root[data-theme="itachi"] body::before{content:"\6731";position:fixed;right:-14px;bottom:44px;font:700 230px/1 var(--head);color:#D41F30;opacity:.05;pointer-events:none;z-index:-1}
-:root[data-theme="itachi"] h1::after{content:"";display:block;width:86px;height:20px;margin-top:8px;filter:drop-shadow(0 0 4px rgba(212,31,48,.7));background:
-  radial-gradient(circle at 10px 4.5px,#0B0B0E 1.9px,transparent 2.3px),radial-gradient(circle at 5.25px 12.75px,#0B0B0E 1.9px,transparent 2.3px),radial-gradient(circle at 14.75px 12.75px,#0B0B0E 1.9px,transparent 2.3px),
-  radial-gradient(circle at 10px 10px,transparent 4.6px,rgba(0,0,0,.55) 5px 5.9px,transparent 6.3px),
-  radial-gradient(circle at 10px 10px,#E8323F 0 7.9px,#8E0F1A 8.5px 9.8px,transparent 10.2px),
-  linear-gradient(90deg,var(--accent),transparent) 27px 9.25px/59px 1.5px no-repeat}
-:root[data-theme="itachi"] .set.done{border-color:#E8323F;box-shadow:0 0 12px rgba(212,31,48,.45);
-  background:radial-gradient(circle closest-side,transparent 0 calc(100% - 10px),rgba(0,0,0,.5) calc(100% - 10px) calc(100% - 8.5px),transparent calc(100% - 8.5px)),radial-gradient(circle at 50% 40%,#E8323F,#9E0F1B 72%)}
-:root[data-theme="itachi"] .btn.danger,:root[data-theme="itachi"] .trend{color:#F0606B}
-:root[data-theme="itachi"] #rest{background:#141418;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(212,31,48,.3)}
-:root[data-theme="itachi"] #rest .btn{color:var(--ink);border-color:rgba(212,31,48,.5)}
-/* Ultra Instinct (Dragon Ball Super): black and chrome, silver aura, a faint violet tint */
-:root[data-theme="ultra"]{
-  --bg:#08080B;--surface:#121216;--ink:#F1F2F5;--muted:#9A9CA6;--line:#2A2A31;
-  --accent:#D9DCE3;--accent-ink:#0B0B0F;--ok:#C5C9D2;--ok-ink:#0B0B0F;--miss:#5A4E78;--soft:#1C1C22;color-scheme:dark;
-  --head:"Chakra Petch","Barlow Condensed",system-ui,sans-serif;
-}
-:root[data-theme="ultra"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
-  radial-gradient(9% 70% at 6% 100%,rgba(225,230,245,.16),transparent 72%),radial-gradient(16% 85% at 30% 104%,rgba(215,220,240,.13),transparent 70%),
-  radial-gradient(11% 75% at 54% 102%,rgba(240,242,252,.15),transparent 70%),radial-gradient(17% 90% at 78% 105%,rgba(195,185,235,.14),transparent 70%),
-  radial-gradient(9% 65% at 97% 100%,rgba(225,230,245,.16),transparent 72%),radial-gradient(120% 55% at 50% 118%,rgba(110,100,165,.2),transparent 70%)}
-:root[data-theme="ultra"] h1{letter-spacing:.5px}
-:root[data-theme="ultra"] h1::after{content:"";display:block;width:70px;height:2px;margin-top:10px;background:linear-gradient(90deg,#fff,#C9CDD6 45%,transparent);box-shadow:0 0 8px rgba(255,255,255,.55)}
-:root[data-theme="ultra"] .card{background:rgba(18,18,22,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
-:root[data-theme="ultra"] .tab.on{box-shadow:inset 0 2px 0 var(--accent),0 -8px 16px -10px rgba(230,234,245,.8)}
-:root[data-theme="ultra"] .set.done{background:radial-gradient(circle at 50% 32%,#FFFFFF,#CDD1D9 45%,#8C909A 88%);border-color:#E6E8EE;box-shadow:0 0 12px rgba(220,225,240,.35)}
-:root[data-theme="ultra"] .set.miss{color:#fff}
-:root[data-theme="ultra"] .btn.primary{background:linear-gradient(180deg,#F4F5F8,#AEB2BC);border-color:#E6E8EE;box-shadow:0 0 14px rgba(220,225,240,.25)}
-:root[data-theme="ultra"] .btn.danger,:root[data-theme="ultra"] .trend{color:#BBA9F2}
-:root[data-theme="ultra"] #rest{background:#111115;color:var(--ink);border:1px solid var(--accent);box-shadow:0 0 18px rgba(220,225,240,.2)}
-:root[data-theme="ultra"] #rest .btn{color:var(--ink);border-color:rgba(217,220,227,.4)}
-/* Todoroki (My Hero Academia): half-cold half-hot, flame on the left, ice on the right */
-:root[data-theme="todoroki"]{
-  --bg:#0B0E15;--surface:#141821;--ink:#F2F3F5;--muted:#9AA1AE;--line:#2A303C;
-  --accent:#F2F3F5;--accent-ink:#0B0D12;--ok:#E0402F;--ok-ink:#0B0D12;--miss:#3A404C;--soft:#1D222D;color-scheme:dark;
-  --head:"Kanit","Barlow Condensed",system-ui,sans-serif;
-  --fire:#E0402F;--ice:#A6DCF3;
-}
-:root[data-theme="todoroki"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:
-  radial-gradient(55% 70% at -8% 60%,rgba(224,64,47,.2),transparent 70%),radial-gradient(55% 70% at 108% 40%,rgba(166,220,243,.17),transparent 70%)}
-:root[data-theme="todoroki"] h1::after{content:"";display:block;width:64px;height:3px;margin-top:10px;border-radius:2px;background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);box-shadow:-6px 0 10px -2px rgba(224,64,47,.6),6px 0 10px -2px rgba(166,220,243,.6)}
-:root[data-theme="todoroki"] .card{background:rgba(20,24,33,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:inset 2px 0 0 rgba(224,64,47,.55),inset -2px 0 0 rgba(166,220,243,.55)}
-:root[data-theme="todoroki"] .tab.on{box-shadow:none;background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%) top/100% 2px no-repeat}
-:root[data-theme="todoroki"] .set.done{background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);background-origin:border-box;border-color:transparent;box-shadow:-4px 0 10px -3px rgba(224,64,47,.6),4px 0 10px -3px rgba(166,220,243,.6)}
-:root[data-theme="todoroki"] .set.miss{color:#fff}
-:root[data-theme="todoroki"] .btn.primary{background:linear-gradient(90deg,var(--fire) 50%,var(--ice) 50%);background-origin:border-box;border-color:transparent;color:#0B0D12}
-:root[data-theme="todoroki"] .btn.danger,:root[data-theme="todoroki"] .trend{color:#FF8A73}
-:root[data-theme="todoroki"] #rest{background:#11141B;color:var(--ink);border:1px solid #3A404C;border-left-color:var(--fire);border-right-color:var(--ice);box-shadow:-8px 0 16px -8px rgba(224,64,47,.6),8px 0 16px -8px rgba(166,220,243,.6)}
-:root[data-theme="todoroki"] #rest .btn{color:var(--ink);border-color:rgba(242,243,245,.3)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 var(--body);padding-bottom:132px}
@@ -212,12 +126,6 @@ button.cal-d{color:var(--ink)}
 .cal-d:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .line{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-variant-numeric:tabular-nums}
 .empty{margin:30px 20px;text-align:center;color:var(--muted)}
-/* a background image picked in Settings (per theme, stored on the phone), dimmed toward the theme's own background */
-#bgimg{position:fixed;inset:0;pointer-events:none;display:none}
-#bgimg{z-index:-2;background:var(--bg-img) center/cover no-repeat}
-#bgimg::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:var(--bg-dim,.55)}
-:root[data-bgimg] #bgimg{display:block}
-input[type=range]{width:100%;accent-color:var(--accent)}
 .rng{display:flex;gap:4px;margin:10px 0 2px}
 .rng button{flex:1;border:0;border-bottom:2px solid transparent;background:transparent;padding:8px 0;min-height:40px;font:700 16px/1 var(--head);color:var(--muted)}
 .rng button.on{color:var(--ink);border-bottom-color:var(--accent)}
@@ -231,37 +139,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   /* a workout picked on the calendar lights up briefly */
   .sess.flash{border-radius:8px;animation:flash 1.6s ease-out}
   @keyframes flash{from{background:color-mix(in srgb,var(--accent) 22%,transparent)}to{background:transparent}}
-  /* Sukuna: a quick slash across a set as you complete it */
-  :root[data-theme="sukuna"] .set.fresh{position:relative;overflow:hidden}
-  :root[data-theme="sukuna"] .set.fresh::after{content:"";position:absolute;left:-15%;top:calc(50% - 1.5px);width:130%;height:3px;background:#F7F0E6;box-shadow:0 0 6px #F7F0E6;transform:rotate(-38deg);clip-path:inset(0 100% 0 0);animation:slash .32s ease-out forwards}
-  @keyframes slash{60%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
   /* Gojo: a blue ring pulses out from a set as you complete it */
   :root[data-theme="gojo"] .set.fresh{position:relative}
   :root[data-theme="gojo"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #9BE3FF;box-shadow:0 0 10px #5CC8FF;pointer-events:none;animation:pulse .5s ease-out forwards}
   @keyframes pulse{from{transform:scale(1);opacity:.95}to{transform:scale(1.75);opacity:0}}
-  /* Itachi: three tomoe spin once around a set as you complete it */
-  :root[data-theme="itachi"] .set.fresh{position:relative}
-  :root[data-theme="itachi"] .set.fresh::after{content:"";position:absolute;inset:-2px;border-radius:50%;pointer-events:none;
-    background:radial-gradient(circle at 50% 16%,#0B0B0E 3.2px,transparent 3.7px),radial-gradient(circle at 22% 66%,#0B0B0E 3.2px,transparent 3.7px),radial-gradient(circle at 78% 66%,#0B0B0E 3.2px,transparent 3.7px);
-    animation:tomoe .7s cubic-bezier(.3,.6,.3,1) forwards}
-  @keyframes tomoe{0%{transform:rotate(-120deg);opacity:0}25%{opacity:1}75%{opacity:1}100%{transform:rotate(240deg);opacity:0}}
-  /* Ultra Instinct: silver afterimages slip sideways off a set as you complete it */
-  :root[data-theme="ultra"] .set.fresh{position:relative}
-  :root[data-theme="ultra"] .set.fresh::before,:root[data-theme="ultra"] .set.fresh::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(240,242,248,.9);background:rgba(220,225,240,.22);pointer-events:none;opacity:0;animation:afterimage .45s ease-out forwards}
-  :root[data-theme="ultra"] .set.fresh::before{animation-delay:.07s}
-  @keyframes afterimage{0%{transform:translateX(0);opacity:.85}100%{transform:translateX(26px);opacity:0}}
-  /* Todoroki: a ring bursts out of a set as you complete it, flame on the left half, ice on the right */
-  :root[data-theme="todoroki"] .set.fresh{position:relative}
-  :root[data-theme="todoroki"] .set.fresh::before,:root[data-theme="todoroki"] .set.fresh::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid var(--fire);box-shadow:0 0 10px var(--fire);pointer-events:none;animation:burst .5s ease-out forwards}
-  :root[data-theme="todoroki"] .set.fresh::before{clip-path:inset(-20px 50% -20px -20px)}
-  :root[data-theme="todoroki"] .set.fresh::after{border-color:var(--ice);box-shadow:0 0 10px var(--ice);clip-path:inset(-20px -20px -20px 50%)}
-  @keyframes burst{from{transform:scale(1);opacity:.95}to{transform:scale(1.7);opacity:0}}
 }
 </style>
 </head>
 <body>
-<div id="bgimg" aria-hidden="true"></div>
-<input type="file" accept="image/*" data-f="bgfile" id="bgfile" hidden><!-- outside #view so a re-render while the picker is open can't drop the file -->
 <main id="view"></main>
 <div id="rest" hidden><span id="rt"></span><button class="btn sm" data-a="r30">+30s</button><button class="btn sm" data-a="rskip">Dismiss</button></div>
 <nav class="tabs">
@@ -308,42 +193,19 @@ try{ const raw=localStorage.getItem(KEY); S=raw?JSON.parse(raw):defaults(); }cat
 if(!S||!S.ex||!S.templates||!S.sessions){ S=defaults(); }
 S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{});
 // heading fonts only some themes use, loaded when picked
-const THEME_FONT={sukuna:'Shippori+Mincho+B1:wght@700;800',gojo:'Zen+Kaku+Gothic+New:wght@700;900',itachi:'Kaisei+Tokumin:wght@700',ultra:'Chakra+Petch:wght@600;700',todoroki:'Kanit:wght@600;700'};
-const THEMES=['light','dark','sukuna','gojo','itachi','ultra','todoroki'];
-const THEME_NAMES={'':'Match device',light:'Light',dark:'Dark',sukuna:'Sukuna',gojo:'Gojo',itachi:'Itachi',ultra:'Ultra Instinct',todoroki:'Todoroki'};
+const THEME_FONT={gojo:'Zen+Kaku+Gothic+New:wght@700;900'};
+const THEMES=['light','dark','gojo'];
 const applyTheme=()=>{
   if(S.settings.theme&&!THEMES.includes(S.settings.theme)) S.settings.theme=''; // a theme that was removed: back to matching the device
   const t=S.settings.theme, root=document.documentElement;
   if(t) root.setAttribute('data-theme',t); else root.removeAttribute('data-theme');
-  delete S.settings.anim; // animated variants were removed
-  applyBg();
+  delete S.settings.anim; delete S.settings.bgDim; // removed settings
   if(THEME_FONT[t]&&!$('#font-'+t)){ const l=document.createElement('link'); l.id='font-'+t; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family='+THEME_FONT[t]+'&display=swap'; document.head.appendChild(l); }
   // match the phone's status bar to the chosen theme
   const bg=t&&getComputedStyle(root).getPropertyValue('--bg').trim();
   document.querySelectorAll('meta[name=theme-color]').forEach(m=>{ if(!m.dataset.c) m.dataset.c=m.content; m.content=bg||m.dataset.c; });
 };
-/* ---- background images: one per theme, kept in IndexedDB on this phone (too big for localStorage or backups) ---- */
-const bgStore=(()=>{
-  let dbp;
-  const db=()=>dbp||(dbp=new Promise((res,rej)=>{ const r=indexedDB.open('lift',1); r.onupgradeneeded=()=>r.result.createObjectStore('bg'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }));
-  const run=(mode,fn)=>db().then(d=>new Promise((res,rej)=>{ const t=d.transaction('bg',mode), q=fn(t.objectStore('bg')); t.oncomplete=()=>res(q.result); t.onerror=()=>rej(t.error); }));
-  return {get:k=>run('readonly',s=>s.get(k)), set:(k,v)=>run('readwrite',s=>s.put(v,k)), del:k=>run('readwrite',s=>s.delete(k))};
-})();
-const bgKey=()=>S.settings.theme||'device';
-const bgDim=()=>{ const d=(S.settings.bgDim||{})[bgKey()]; return d==null?.55:d; };
-let bgUrl='', bgInfo=null;
-function applyBg(){
-  const root=document.documentElement, key=bgKey();
-  root.style.setProperty('--bg-dim',bgDim());
-  bgStore.get(key).then(blob=>{
-    if(key!==bgKey()) return; // theme changed meanwhile
-    if(bgUrl) URL.revokeObjectURL(bgUrl);
-    bgUrl=blob?URL.createObjectURL(blob):''; bgInfo=blob?{type:blob.type,size:blob.size}:null;
-    if(blob) root.style.setProperty('--bg-img',`url("${bgUrl}")`);
-    root.toggleAttribute('data-bgimg',!!blob);
-    if(typeof ui!=='undefined'&&ui.tab==='data') render();
-  }).catch(()=>{});
-}
+try{ indexedDB.deleteDatabase('lift'); }catch(e){} // background images were removed: free the space they used
 applyTheme();
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 // ask the browser not to clear our data when the phone is low on space
@@ -812,10 +674,7 @@ function vData(){
     <div class="field"><label>Rest notifications</label><select data-f="notify"><option value="0">Off</option><option value="1" ${notifyOn()?'selected':''}>On</option></select></div>
     ${ui.notifyMsg?`<p class="muted" style="margin:-2px 0 6px">${esc(ui.notifyMsg)}</p>`:''}
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
-    <div class="field"><label>Theme</label><select data-f="theme"><optgroup label="Standard"><option value="" ${cur===''?'selected':''}>Match device</option><option value="light" ${cur==='light'?'selected':''}>Light</option><option value="dark" ${cur==='dark'?'selected':''}>Dark</option></optgroup><optgroup label="Characters"><option value="sukuna" ${cur==='sukuna'?'selected':''}>Sukuna</option><option value="gojo" ${cur==='gojo'?'selected':''}>Gojo</option><option value="itachi" ${cur==='itachi'?'selected':''}>Itachi</option><option value="ultra" ${cur==='ultra'?'selected':''}>Ultra Instinct</option><option value="todoroki" ${cur==='todoroki'?'selected':''}>Todoroki</option></optgroup></select></div>
-    <div class="field"><label>Background image</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="bgpick">${bgInfo?'Change':'Choose'}</button>${bgInfo?'<button class="btn sm danger" data-a="bgdel">Remove</button>':''}</div></div>
-    ${bgInfo?`<div class="field"><label>Dim image</label><input type="range" min="0" max="0.9" step="0.05" value="${bgDim()}" data-f="bgdim" aria-label="Dim background image"></div>`:''}
-    <p class="muted" style="margin:0 0 6px">${ui.bgMsg?esc(ui.bgMsg)+' ':''}For the ${esc(THEME_NAMES[S.settings.theme||''])} theme. Kept on this phone only, not in backups.${bgInfo&&bgInfo.type==='image/gif'?' Animated GIFs use more battery.':''}</p></div>
+    <div class="field"><label>Theme</label><select data-f="theme"><optgroup label="Standard"><option value="" ${cur===''?'selected':''}>Match device</option><option value="light" ${cur==='light'?'selected':''}>Light</option><option value="dark" ${cur==='dark'?'selected':''}>Dark</option></optgroup><optgroup label="Character"><option value="gojo" ${cur==='gojo'?'selected':''}>Gojo</option></optgroup></select></div></div>
   <div class="card"><div class="name">Auto backup</div><p class="muted">Saves everything to a secret (unlisted) GitHub Gist after each workout, and whenever you leave the app with unsaved changes.</p>
   ${G.token?`<p class="gstat" style="margin:8px 0">${esc(gistStatus())}</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="gsync">Back up now</button>
@@ -920,8 +779,6 @@ document.addEventListener('click',ev=>{
       } else ui.confirm='import';
       break;
     case 'share': shareBackup(); return;
-    case 'bgpick': $('#bgfile').click(); return;
-    case 'bgdel': bgStore.del(bgKey()).then(applyBg); return;
     case 'gsync': G.armed=true; G.found=''; saveG(); syncGist(true); break;
     case 'grestore': if(keep==='grestore'){ restoreGist(); return; } ui.confirm='grestore'; break;
     case 'gdisc': if(keep==='gdisc'){ G={token:'',id:'',armed:false,last:0,err:'',hash:'',found:''}; saveG(); } else ui.confirm='gdisc'; break;
@@ -931,7 +788,6 @@ document.addEventListener('click',ev=>{
 });
 // workout note: save as you type, without re-rendering (a re-render on blur would swallow the Finish tap)
 document.addEventListener('input',ev=>{
-  if(ev.target.dataset.f==='bgdim') document.documentElement.style.setProperty('--bg-dim',ev.target.value);
   if(ev.target.id==='note'&&S.active){ S.active.note=ev.target.value; save(); }
   const hs=ev.target.dataset.hnote&&S.sessions.find(x=>x.id===ev.target.dataset.hnote);
   if(hs){ if(ev.target.value.trim()) hs.note=ev.target.value; else delete hs.note; save(); }
@@ -965,14 +821,7 @@ document.addEventListener('change',ev=>{
     case 'sound': S.settings.sound=v; if(v!=='off') beep(3); break; // play it once so you can hear the change
     case 'restFail': { const n=parseInt(v,10); if(n>0) S.settings.restFail=n; break; }
     case 'plates': { const p=v.split(',').map(x=>parseFloat(x)).filter(x=>x>0); if(p.length) S.settings.plates=p; break; }
-    case 'theme': S.settings.theme=v; ui.bgMsg=''; applyTheme(); break;
-    case 'bgfile': {
-      const f=el.files&&el.files[0]; el.value=''; if(!f) return;
-      if(!/^image\//.test(f.type)){ ui.bgMsg='That file isn\u2019t an image.'; break; }
-      if(f.size>25e6){ ui.bgMsg='That image is over 25 MB; pick a smaller one.'; break; }
-      ui.bgMsg=''; bgStore.set(bgKey(),f).then(applyBg).catch(()=>{ ui.bgMsg='Couldn\u2019t save the image (phone storage full?).'; render(); });
-      return; }
-    case 'bgdim': S.settings.bgDim=Object.assign({},S.settings.bgDim,{[bgKey()]:+v}); document.documentElement.style.setProperty('--bg-dim',v); break;
+    case 'theme': S.settings.theme=v; applyTheme(); break;
     case 'gtoken': if(v.trim()){ G.token=v.trim(); G.id=''; G.armed=false; G.err=''; G.found=''; saveG(); connectGist(); } break;
     case 'ex': {
       const ex=getEx(d.id), k=d.k; if(!ex) break;

@@ -479,39 +479,20 @@ test('themes load cleanly; a removed theme falls back to the device setting', as
   const { p, errs } = await open();
   await p.click('[data-tab=data]');
   const themes = await p.$$eval('[data-f=theme] option', o => o.map(x => x.value));
-  const chars = ['sukuna', 'gojo', 'itachi', 'ultra', 'todoroki'];
-  eq(themes, ['', 'light', 'dark', ...chars]);
-  eq(await p.$$eval('[data-f=theme] optgroup', g => g.map(x => x.label)), ['Standard', 'Characters']);
+  eq(themes, ['', 'light', 'dark', 'gojo']);
+  eq(await p.$$eval('[data-f=theme] optgroup', g => g.map(x => x.label)), ['Standard', 'Character']);
   for (const t of themes.filter(Boolean)) {
     await p.selectOption('[data-f=theme]', t);
     eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), t);
   }
   eq(await p.evaluate(() => document.getAnimations().length), 0, 'no ambient animation');
-  await withState(p, s => { s.settings.theme = 'gojo'; s.settings.anim = true; }); // was on an animated variant
-  eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), 'gojo');
-  await withState(p, s => { s.settings.theme = 'prometheus'; });
-  eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), null);
-  return errs;
-});
-
-test('background image: per theme, survives reload, kept out of backups', async () => {
-  const { p, errs } = await open();
-  await p.click('[data-tab=data]'); await p.selectOption('[data-f=theme]', 'gojo');
-  await p.setInputFiles('#bgfile', path.join(ROOT, 'icon-192.png'));
-  const hasImg = () => p.evaluate(() => document.documentElement.hasAttribute('data-bgimg'));
-  await p.waitForFunction(() => document.documentElement.hasAttribute('data-bgimg'));
-  ok(await p.isVisible('[data-a=bgdel]'), 'Remove button shown');
-  await p.$eval('[data-f=bgdim]', el => { el.value = '0.3'; el.dispatchEvent(new Event('change', { bubbles: true })); });
-  await p.selectOption('[data-f=theme]', 'sukuna'); await p.waitForTimeout(300);
-  eq(await hasImg(), false, 'other themes keep their own (none)');
-  await p.selectOption('[data-f=theme]', 'gojo'); await p.waitForTimeout(300);
-  eq(await hasImg(), true, 'back on Gojo, its image returns');
-  await p.reload(); await p.waitForTimeout(300);
-  eq(await hasImg(), true, 'survives reload');
-  eq(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg-dim').trim()), '0.3', 'dim kept per theme');
-  ok(!(await p.evaluate(() => localStorage.getItem('lift.v1'))).includes('data:image'), 'image not in the saved/backed-up data');
-  await p.click('[data-tab=data]'); await p.click('[data-a=bgdel]'); await p.waitForTimeout(300);
-  eq(await hasImg(), false, 'removed');
+  ok(!(await p.$('[data-a=bgpick]')), 'no background image setting');
+  for (const gone of ['prometheus', 'sukuna', 'itachi', 'ultra', 'todoroki']) { // themes that were removed
+    await withState(p, s => { s.settings.theme = gone; s.settings.bgDim = { [gone]: 0.3 }; });
+    eq(await p.evaluate(() => document.documentElement.getAttribute('data-theme')), null, gone + ' falls back');
+  }
+  await p.click('[data-tab=today]'); // any tap saves
+  eq(Object.keys((await state(p)).settings).includes('bgDim'), false, 'old background setting dropped');
   return errs;
 });
 
