@@ -230,6 +230,55 @@ test('progress chart: ranges, weight / est. 1RM, tap to select a workout', async
   return errs;
 });
 
+test('plate counts: only the plates you own, and an exact combination even when biggest-first misses it', async () => {
+  const { p, errs } = await open();
+  const plates = async (txt, w) => {
+    await p.click('[data-tab=data]'); await p.fill('[data-f=plates]', txt); await p.press('[data-f=plates]', 'Tab');
+    await withState(p, s => { s.ex.find(e => e.id === 'squat').override = w; });
+    await p.click('[data-a=start][data-t=A]');
+    const out = await p.textContent('.plates'); await p.click('[data-a=discard]'); await p.click('[data-a=discard]'); return out;
+  };
+  eq(await plates('45x4, 25x2, 10x2, 5x2, 2.5x2', 185), 'Per side: 45 + 25');
+  eq(await plates('45x4, 25x2, 10x2, 5x2, 2.5x2', 315), 'Per side: 45 + 45 + 25 + 10 + 5 + 2.5 (short 2.5)', 'only two 45s a side');
+  eq(await plates('45x2, 35x2, 25x2', 165), 'Per side: 35 + 25', 'biggest-first (45, then stuck) would miss this');
+  eq(await plates('45, 25, 10, 5, 2.5', 315), 'Per side: 45 + 45 + 45', 'sizes without counts: plenty of each');
+  await p.click('[data-tab=data]');
+  eq(await p.inputValue('[data-f=plates]'), '45, 25, 10, 5, 2.5');
+  await p.fill('[data-f=plates]', '45x6, 10x2, 2.5'); await p.press('[data-f=plates]', 'Tab');
+  eq(await p.inputValue('[data-f=plates]'), '45x6, 10x2, 2.5', 'counts kept as typed');
+  return errs;
+});
+
+test('swap when a weight can\'t be loaded: options keep the volume close, and progression continues from the planned weight', async () => {
+  const { p, errs } = await open();
+  await withState(p, s => { s.settings.plates = [45, 25, 10, 5]; s.ex.find(e => e.id === 'bench').override = 190; }); // no 2.5s: 190 needs 72.5 a side
+  await p.click('[data-a=start][data-t=A]');
+  const bench = () => p.locator('.card').nth(1);
+  const chips = () => bench().locator('[data-a=swap]').allTextContents();
+  const opts = await chips();
+  eq(opts.slice(0, 2), ['185 · 5×5−3% vol', '195 · 5×5+3% vol'], 'nearest loadable below and above');
+  ok(opts.length === 3 && /^\d+ · [56]×\d+[+−]\d% vol$/.test(opts[2]), 'a lighter, more-reps option within 5%: ' + opts[2]);
+  ok((await bench().textContent()).includes("Can't load 190"));
+  ok(!(await p.locator('.card').nth(0).locator('[data-a=swap]').count()), 'squat 185 loads fine: no swap offered');
+  await bench().locator('[data-a=swap]').nth(2).click();
+  ok((await bench().textContent()).includes('Swapped from 190 · 5×5'), 'swap shown');
+  await bench().locator('[data-a=unswap]').click();
+  eq(await bench().locator('[data-f=w]').inputValue(), '190', 'Undo puts the plan back');
+  await bench().locator('[data-a=swap]').first().click();
+  eq(await bench().locator('[data-f=w]').inputValue(), '185');
+  for (let j = 0; j < 5; j++) await p.click(`[data-a=set][data-e="1"][data-s="${j}"]`);
+  ok(!(await bench().locator('[data-a=unswap]').count()), 'no Undo once sets are logged');
+  await p.click('[data-a=finish]');
+  ok((await texts(p, '.line')).includes('Bench press195 · 5×5'), 'next target builds on 190 (the plan), not 185');
+  await p.click('[data-tab=hist]');
+  ok((await texts(p, '.line')).some(x => x.startsWith('Bench press 185 (for 190 5×5)')), 'history notes the swap');
+  // the app's own export, swap and plate settings included, imports cleanly
+  await p.click('[data-tab=data]'); const exp = await p.inputValue('#exp');
+  await p.fill('#imp', exp); await p.click('[data-a=import]'); await p.click('[data-a=import]');
+  eq(await p.textContent('.toast'), 'Backup imported.');
+  return errs;
+});
+
 test('workout note: saved as you type, Finish works in one tap, shown in History', async () => {
   const { p, errs } = await open();
   await p.click('[data-a=start][data-t=A]');

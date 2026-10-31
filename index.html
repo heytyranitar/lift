@@ -80,6 +80,8 @@ button{cursor:pointer}
 .step{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);font-size:22px;line-height:1}
 .unit{color:var(--muted);font-weight:600}
 .plates{min-height:20px;margin-bottom:10px}
+.swap{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-4px 0 12px}
+.chip small{margin-left:6px;font-weight:500;color:var(--muted)}
 .trend{font-size:13px;color:var(--miss);margin-top:-2px}
 .pr{font-weight:700;margin-top:4px}
 .stats{margin-top:8px}
@@ -222,6 +224,7 @@ function entryProblem(e){
   if(!isCount(e.nSets)||!isAmt(e.reps)) return 'has an invalid set or rep count';
   if(!Array.isArray(e.sets)||!e.sets.every(r=>r==null||isCount(r))) return 'has invalid set results';
   if(e.wd!=null&&!Array.isArray(e.wd)) return 'has invalid warm-ups';
+  if(e.swap!=null&&!(isObj(e.swap)&&isAmt(e.swap.w)&&isCount(e.swap.n)&&isAmt(e.swap.r))) return 'has an invalid swap';
   return '';
 }
 function backupProblem(o){
@@ -252,6 +255,7 @@ function backupProblem(o){
   if(st!=null){
     if(!isObj(st)) return 'its settings are invalid';
     if(st.plates!=null&&!(Array.isArray(st.plates)&&st.plates.every(x=>isNum(x)&&x>0))) return 'its plate list is invalid';
+    if(st.plateCount!=null&&!(isObj(st.plateCount)&&Object.values(st.plateCount).every(isCount))) return 'its plate counts are invalid';
     if((st.rest!=null&&!isAmt(st.rest))||(st.restFail!=null&&!isAmt(st.restFail))) return 'its rest times are invalid';
   }
   return '';
@@ -356,8 +360,9 @@ function nextTarget(ex){
   for(const s of S.sessions){
     for(const e of s.entries){
       if(e.exId!==ex.id) continue;
-      if(e.weight!==w) fails=0; // you changed the weight yourself: failed attempts start over
-      w=e.weight; deloaded=false;
+      const tw=e.swap?e.swap.w:e.weight; // a swap stood in for its planned weight
+      if(tw!==w) fails=0; // you changed the weight yourself: failed attempts start over
+      w=tw; deloaded=false;
       const ok=e.sets.length===e.nSets&&e.sets.every(r=>r!=null&&r>=e.reps);
       if(ex.rule==='linear'){
         if(ok){w+=ex.inc;fails=0;}
@@ -380,10 +385,53 @@ function trendText(ex,n){
   return '';
 }
 
+// plates per side: half of each size you own (they go on in pairs), or plenty when no count was given
+function sideStock(){ const c=S.settings.plateCount||{}; return [...S.settings.plates].sort((a,b)=>b-a).map(p=>({p,n:c[p]!=null?Math.floor(c[p]/2):99})); }
+let plateMemo={key:'',m:new Map()};
+// the fewest plates (heaviest first) that make exactly `units` quarter-pounds on one side, or null
+function sideExact(units){
+  const st=sideStock(), key=JSON.stringify(st);
+  if(plateMemo.key!==key) plateMemo={key,m:new Map()};
+  const m=plateMemo.m, f=(i,rem)=>{
+    if(rem===0) return [];
+    if(i>=st.length) return null;
+    const k=i*1e6+rem; if(m.has(k)) return m.get(k);
+    const u=Math.round(st[i].p*4); let best=null;
+    for(let c=Math.min(st[i].n,Math.floor(rem/u));c>=0;c--){ const r=f(i+1,rem-c*u); if(r&&(!best||c+r.length<best.length)) best=[...Array(c).fill(st[i].p),...r]; }
+    m.set(k,best); return best;
+  };
+  return f(0,units);
+}
+// what to load on each side: the exact weight if your plates can make it, otherwise the closest below and how much is missing
 function perSide(total,bar){
-  let side=(total-bar)/2; const out=[];
-  for(const p of [...S.settings.plates].sort((a,b)=>b-a)){ while(side>=p-1e-9){out.push(p);side-=p;} }
-  return {out,short:side>0.01?fw(side):0};
+  const side=Math.max(0,Math.round((total-bar)*2));
+  for(let s=side;s>=0;s--){ const out=sideExact(s); if(out) return {out,short:s<side?fw((side-s)/4):0}; }
+  return {out:[],short:fw(side/4)};
+}
+const loadable=(w,bar)=>w>=bar&&!perSide(w,bar).short;
+/* ---- can't load a weight: nearby weights you can, with sets x reps that keep the volume (sets x reps x weight) close.
+   A swap is a one-off: progression treats it as the weight it stood in for. ---- */
+function swapOptions(e,ex){
+  const bar=ex.bar||0, w=e.weight, n=e.nSets, r=e.reps, V=n*r*w, out=[];
+  if(!bar||w<=bar||e.sets.some(v=>v!=null)||loadable(w,bar)) return out;
+  const loads=[], lo=Math.max(bar,w*.8), hi=w*1.03;
+  for(let s=Math.ceil((lo-bar)*2);s<=Math.floor((hi-bar)*2);s++) if(sideExact(s)) loads.push(bar+s/2);
+  const below=loads.filter(t=>t<w), above=loads.filter(t=>t>w), opt=(t,sets,reps)=>({w:t,n:sets,r:reps,d:Math.round((sets*reps*t-V)/V*100)});
+  if(below.length) out.push(opt(below[below.length-1],n,r));
+  if(above.length) out.push(opt(above[0],n,r));
+  let best=null;
+  for(const t of below.slice(0,-1)) for(const sets of [n,n+1]) for(let reps=Math.ceil(r)+1;reps<=12;reps++){
+    const d=Math.abs(sets*reps*t-V)/V; if(d>.05) continue;
+    const score=d+(sets!==n?.02:0)+(below[below.length-1]-t)/w*.1;
+    if(!best||score<best.score) best={score,o:opt(t,sets,reps)};
+  }
+  if(best) out.push(best.o);
+  return out;
+}
+function swapHtml(e,i,ex){
+  if(e.swap) return `<div class="swap muted">Swapped from ${fw(e.swap.w)} \u00b7 ${e.swap.n}\u00d7${e.swap.r}${e.sets.some(v=>v!=null)?'':` <button class="btn sm" data-a="unswap" data-e="${i}">Undo</button>`}</div>`;
+  const o=swapOptions(e,ex); if(!o.length) return '';
+  return `<div class="swap"><span class="muted">Can't load ${fw(e.weight)} with your plates. Try:</span>${o.map((x,k)=>`<button class="chip" data-a="swap" data-e="${i}" data-k="${k}">${fw(x.w)} \u00b7 ${x.n}\u00d7${x.r}<small>${x.d>0?'+':x.d<0?'\u2212':''}${Math.abs(x.d)}% vol</small></button>`).join('')}</div>`;
 }
 function plateText(total,bar){
   if(!bar||total<=bar) return '';
@@ -519,7 +567,7 @@ function vActive(){
       <div class="wrow"><button class="step" data-a="w" data-e="${i}" data-d="-1" aria-label="Decrease weight">−</button>
       <input type="number" inputmode="decimal" step="any" value="${fw(e.weight)}" data-f="w" data-e="${i}" aria-label="Weight">
       <span class="unit">lb</span><button class="step" data-a="w" data-e="${i}" data-d="1" aria-label="Increase weight">+</button></div>
-      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div>${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
+      <div class="plates muted">${esc(plateText(e.weight,ex.bar))}</div>${swapHtml(e,i,ex)}${warmHtml(e,i,ex)}<div class="sets">${circles}</div></div>`;
   });
   h+=`<div class="card"><label for="note" class="name" style="display:block;margin-bottom:6px">Notes</label>
       <textarea id="note" class="note" placeholder="How did it go?">${esc(a.note||'')}</textarea></div>`;
@@ -620,7 +668,7 @@ function vHist(){
       h+=`<textarea class="note" data-hnote="${s.id}" placeholder="Notes" style="margin-top:6px">${esc(s.note||'')}</textarea>`;
       h+=`<div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm primary" data-a="hdone">Done</button>`;
     }else{
-      for(const e of s.entries) h+=`<div class="line"><span>${esc(e.name)} ${fw(e.weight)}</span><span>${e.sets.map(v=>v==null?'–':v).join(' ')}</span></div>`;
+      for(const e of s.entries) h+=`<div class="line"><span>${esc(e.name)} ${fw(e.weight)}${e.swap?` <small class="muted">(for ${fw(e.swap.w)} ${e.swap.n}\u00d7${e.swap.r})</small>`:''}</span><span>${e.sets.map(v=>v==null?'–':v).join(' ')}</span></div>`;
       if(s.note) h+=`<div class="muted snote">${esc(s.note)}</div>`;
       h+=`<div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" data-a="hedit" data-id="${s.id}">Edit</button>`;
     }
@@ -670,7 +718,8 @@ function vData(){
     <div class="field"><label>Rest timer (sec)</label><input type="number" inputmode="numeric" value="${st.rest}" data-f="rest"></div>
     <div class="field"><label>Rest after a missed set (sec)</label><input type="number" inputmode="numeric" value="${st.restFail||300}" data-f="restFail"></div>
     <div class="field"><label>Timer sound</label><select data-f="sound"><option value="soft">Soft chime</option><option value="off" ${st.sound==='off'?'selected':''}>Off (vibrate only)</option></select></div>
-    <div class="field"><label>Plates (lb)</label><input type="text" value="${st.plates.join(',')}" data-f="plates"></div>
+    <div class="field"><label>Plates (lb)</label><input type="text" value="${esc(st.plates.map(p=>st.plateCount&&st.plateCount[p]!=null?p+'x'+st.plateCount[p]:p).join(', '))}" data-f="plates" autocapitalize="off" spellcheck="false"></div>
+    <p class="muted" style="margin:-2px 0 6px">Sizes, or how many of each you own: e.g. 45x4, 25x2, 10x2 (they go on in pairs). A size without a count means plenty.</p>
     <div class="field"><label>Rest notifications</label><select data-f="notify"><option value="0">Off</option><option value="1" ${notifyOn()?'selected':''}>On</option></select></div>
     ${ui.notifyMsg?`<p class="muted" style="margin:-2px 0 6px">${esc(ui.notifyMsg)}</p>`:''}
     <div class="field"><label>Keep screen on during workouts</label><select data-f="wake"><option value="1">Yes</option><option value="0" ${st.wake===false?'selected':''}>No</option></select></div>
@@ -735,6 +784,12 @@ document.addEventListener('click',ev=>{
       if(cur==null){ startRest(false); ui.fresh=d.e+'-'+j; } // lets a theme animate the set just completed
       else if(cur>=e.reps&&nv!=null&&nv<e.reps) startRest(true,R&&R.start); // set just became a miss
       break; }
+    case 'swap': {
+      const e=S.active.entries[+d.e], ex=getEx(e.exId), o=ex&&swapOptions(e,ex)[+d.k]; if(!o) break;
+      e.swap={w:e.weight,n:e.nSets,r:e.reps}; e.weight=o.w; e.nSets=o.n; e.reps=o.r; e.sets=Array(o.n).fill(null); e.wd=[]; break; }
+    case 'unswap': {
+      const e=S.active.entries[+d.e]; if(!e.swap||e.sets.some(v=>v!=null)) break;
+      e.weight=e.swap.w; e.nSets=e.swap.n; e.reps=e.swap.r; e.sets=Array(e.nSets).fill(null); e.wd=[]; delete e.swap; break; }
     case 'w': { const e=S.active.entries[+d.e], ex=getEx(e.exId); e.weight=Math.max(0,fw(e.weight+(+d.d)*(ex?ex.inc:5))); break; }
     case 'r30': if(R){R.end=Math.max(R.end,Date.now())+30000;R.done=false;R.warned=false;} break;
     case 'rskip': R=null; break;
@@ -820,7 +875,11 @@ document.addEventListener('change',ev=>{
     case 'rest': { const n=parseInt(v,10); if(n>0) S.settings.rest=n; break; }
     case 'sound': S.settings.sound=v; if(v!=='off') beep(3); break; // play it once so you can hear the change
     case 'restFail': { const n=parseInt(v,10); if(n>0) S.settings.restFail=n; break; }
-    case 'plates': { const p=v.split(',').map(x=>parseFloat(x)).filter(x=>x>0); if(p.length) S.settings.plates=p; break; }
+    case 'plates': { // "45, 25" or "45x4, 25x2": sizes, optionally with how many you own
+      const sizes=[], cnt={};
+      for(const t of v.split(',')){ const m=/^\s*(\d+(?:\.\d+)?)\s*(?:[x\u00d7*]\s*(\d+))?\s*$/i.exec(t); if(!m||!(+m[1]>0)||sizes.includes(+m[1])) continue; sizes.push(+m[1]); if(m[2]!=null) cnt[+m[1]]=+m[2]; }
+      if(sizes.length){ S.settings.plates=sizes; if(Object.keys(cnt).length) S.settings.plateCount=cnt; else delete S.settings.plateCount; }
+      break; }
     case 'theme': S.settings.theme=v; applyTheme(); break;
     case 'gtoken': if(v.trim()){ G.token=v.trim(); G.id=''; G.armed=false; G.err=''; G.found=''; saveG(); connectGist(); } break;
     case 'ex': {
