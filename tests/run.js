@@ -99,6 +99,33 @@ test('backup file: save, then restore that file after confirming; Cancel changes
   return errs;
 });
 
+test('save backup file: shares when the phone allows it, otherwise saves to Downloads, and always says so', async () => {
+  // stand in for Android's share sheet: refuse the file, the person closes the sheet, or it works
+  const phone = async how => {
+    const o = await open();
+    await o.ctx.addInitScript(how => {
+      navigator.canShare = () => true;
+      navigator.share = () => how === 'ok' ? Promise.resolve() : Promise.reject(new DOMException('no', how === 'closed' ? 'AbortError' : 'NotAllowedError'));
+    }, how);
+    await o.p.reload(); await o.p.click('[data-tab=data]');
+    return o;
+  };
+  let { p, errs } = await phone('refused');
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 3000 }), p.click('[data-a=share]')]);
+  ok(/^lift-backup-.*\.json$/.test(dl.suggestedFilename()), 'falls back to a download when sharing is refused');
+  eq(await p.textContent('.bkmsg'), 'Saved ' + dl.suggestedFilename() + ' to your Downloads.');
+  const all = [...errs];
+  ({ p, errs } = await phone('closed'));
+  let downloaded = false; p.on('download', () => { downloaded = true; });
+  await p.click('[data-a=share]'); await p.waitForTimeout(300);
+  ok(!downloaded && !(await p.$('.bkmsg')), 'closing the share sheet does nothing');
+  all.push(...errs);
+  ({ p, errs } = await phone('ok'));
+  await p.click('[data-a=share]'); await p.waitForSelector('.bkmsg');
+  eq(await p.textContent('.bkmsg'), 'Backup shared.');
+  return [...all, ...errs];
+});
+
 test('restore rejects a malformed backup file with the reason, and restores a workout in progress', async () => {
   const { p, errs } = await open();
   // a real backup: one finished workout, one in progress with the rest timer running

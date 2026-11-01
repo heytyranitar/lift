@@ -264,12 +264,20 @@ function backupProblem(o){
 function applyBackup(o){ S=o; S.settings=Object.assign({rest:120,plates:[45,35,25,10,5,2.5]},S.settings||{}); applyTheme(); }
 
 /* ---- save a backup file (share sheet on phones, download elsewhere) ---- */
-function shareBackup(){
-  const name='lift-backup-'+new Date().toISOString().slice(0,10)+'.json', json=JSON.stringify(S);
-  try{ const f=new File([json],name,{type:'application/json'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){ navigator.share({files:[f],title:'Lift backup'}).catch(()=>{}); return; } }catch(e){}
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([json],{type:'application/json'})); a.download=name;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+// the share sheet when the phone allows sharing the file; if it won't (Android is picky about file types) save to Downloads instead.
+// Either way say what happened, so a refusal is never silent.
+async function shareBackup(){
+  const name='lift-backup-'+new Date().toISOString().slice(0,10)+'.json', json=JSON.stringify(S), say=m=>{ ui.bkMsg=m; render(); };
+  let f=null; try{ f=new File([json],name,{type:'application/json'}); }catch(e){}
+  if(f&&navigator.canShare&&navigator.canShare({files:[f]})){
+    try{ await navigator.share({files:[f],title:'Lift backup'}); return say('Backup shared.'); }
+    catch(e){ if(e&&e.name==='AbortError') return say(''); } // you closed the share sheet
+  }
+  try{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([json],{type:'application/json'})); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+    say('Saved '+name+' to your Downloads.');
+  }catch(e){ say('Couldn\u2019t save the backup file on this device.'); }
 }
 
 /* ---- automatic backup to a private GitHub Gist ----
@@ -542,7 +550,7 @@ function vToday(){
   const last=[...S.sessions].reverse().find(s=>s.tid==='A'||s.tid==='B');
   const nxt=last&&last.tid==='A'?'B':'A';
   let h='';
-  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.pr?`<div class="pr">${esc(ui.pr)}</div>`:''}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}</div>`;
+  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.pr?`<div class="pr">${esc(ui.pr)}</div>`:''}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}${ui.toastShare&&ui.bkMsg?`<div class="muted bkmsg" role="status" style="margin-top:6px">${esc(ui.bkMsg)}</div>`:''}</div>`;
   h+='<h1>Start workout</h1>';
   for(const t of S.templates){
     const lines=t.ex.map(id=>{const ex=getEx(id); if(!ex) return ''; const n=nextTarget(ex);
@@ -736,6 +744,7 @@ function vData(){
     <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="share">Save backup file</button><button class="btn" data-a="fpick">Restore from file</button></div>
     ${ui.restore?`<div class="toast" style="margin:10px 0 0;border-left-color:var(--miss)"><b>${esc(ui.restore.name)}</b><br>${ui.restore.n} workout${ui.restore.n===1?'':'s'}${ui.restore.last?', the latest on '+esc(fmtDate(ui.restore.last)):''}. Restoring replaces everything currently in the app.
       <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="fcancel">Cancel</button><button class="btn danger" data-a="frestore">Restore</button></div></div>`:''}
+    ${ui.bkMsg?`<p class="muted bkmsg" role="status" style="margin:8px 0 0">${esc(ui.bkMsg)}</p>`:''}
     ${ui.impMsg?`<p class="muted impmsg" role="alert" style="margin:8px 0 0">${esc(ui.impMsg)}</p>`:''}</div>
   <p class="muted" style="text-align:center">App version <span id="ver">${esc(VER)}</span></p>`;
 }
@@ -755,14 +764,14 @@ document.addEventListener('click',ev=>{
   unlockAudio();
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.restore=null; ui.cal=null; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.bkMsg=''; ui.restore=null; ui.cal=null; break;
     case 'cal': ui.cal+=+d.d; break;
     case 'calday': ui.flashDay=d.k; break;
     case 'start': {
       const t=S.templates.find(x=>x.id===d.t); if(!t) break;
       S.active={tid:t.id,start:Date.now(),entries:t.ex.map(id=>{const ex=getEx(id); if(!ex) return null; const n=nextTarget(ex);
         return {exId:id,name:ex.name,weight:n.weight,nSets:n.sets,reps:n.reps,stage:n.stage,sets:Array(n.sets).fill(null)};}).filter(Boolean)};
-      ui.toast=''; ui.pr=''; ui.toastSync=ui.toastShare=false; break; }
+      ui.toast=''; ui.pr=''; ui.toastSync=ui.toastShare=false; ui.bkMsg=''; break; }
     case 'crange': ui.cr=d.r; ui.csel=null; break;
     case 'cmetric': ui.cm=d.m; ui.csel=null; break;
     case 'cplot': { // tap the chart: select the workout nearest the tap
@@ -826,7 +835,7 @@ document.addEventListener('click',ev=>{
     case 'frestore': {
       const r=ui.restore; ui.restore=null; if(!r) break;
       applyBackup(r.o); ui.toast='Backup restored from '+r.name+'.'; ui.tab='today'; ui.impMsg=''; break; }
-    case 'share': shareBackup(); return;
+    case 'share': ui.bkMsg=''; shareBackup(); return;
     case 'gsync': G.armed=true; G.found=''; saveG(); syncGist(true); break;
     case 'grestore': if(keep==='grestore'){ restoreGist(); return; } ui.confirm='grestore'; break;
     case 'gdisc': if(keep==='gdisc'){ G={token:'',id:'',armed:false,last:0,err:'',hash:'',found:''}; saveG(); } else ui.confirm='gdisc'; break;
