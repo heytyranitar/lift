@@ -149,6 +149,7 @@ button.cal-d{color:var(--ink)}
 </style>
 </head>
 <body>
+<input type="file" accept=".json,application/json,text/plain" id="restorefile" data-f="restorefile" hidden><!-- outside #view so a re-render while the picker is open can't drop the file -->
 <main id="view"></main>
 <div id="rest" hidden><span id="rt"></span><button class="btn sm" data-a="r30">+30s</button><button class="btn sm" data-a="rskip">Dismiss</button></div>
 <nav class="tabs">
@@ -347,7 +348,7 @@ addEventListener('online',()=>syncGist());
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') syncGist(); });
 setTimeout(()=>syncGist(),1500);
 
-const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null,imp:''};
+const ui={tab:'today',toast:'',confirm:'',openEx:null,chart:null};
 let VER=('serviceWorker' in navigator)?'checking…':'not installed';
 let R=null; // rest timer, kept in S.active.rest so it survives the app being closed
 if(S.active&&S.active.rest){ R=S.active.rest; const left=R.end-Date.now(); if(left<=0) R.done=R.warned=true; else if(left<=10000) R.warned=true; }
@@ -731,12 +732,10 @@ function vData(){
     <button class="btn sm danger" data-a="gdisc">${ui.confirm==='gdisc'?'Tap again to disconnect':'Disconnect'}</button></div>`
   :`<div class="field"><label>GitHub token</label><input type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" data-f="gtoken"></div>
     <p class="muted">A classic token with only the <b>gist</b> scope.</p>`}</div>
-  <div class="card"><div class="name">Export</div><p class="muted">Copy this text somewhere safe. It holds your plan and every workout.</p>
-    <textarea id="exp" readonly>${esc(JSON.stringify(S))}</textarea>
-    <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="copy">Copy backup</button><button class="btn" data-a="share">Save backup file</button></div></div>
-  <div class="card"><div class="name">Import</div><p class="muted">Paste a backup here. This replaces everything currently in the app.</p>
-    <textarea id="imp" placeholder="Paste backup text">${esc(ui.imp)}</textarea>
-    <button class="btn wide danger" data-a="import" style="margin-top:8px">${ui.confirm==='import'?'Tap again to replace everything':'Import backup'}</button>
+  <div class="card"><div class="name">Backup file</div><p class="muted">Save your plan and every workout as a file, or restore from one. Restoring replaces everything in the app.</p>
+    <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="share">Save backup file</button><button class="btn" data-a="fpick">Restore from file</button></div>
+    ${ui.restore?`<div class="toast" style="margin:10px 0 0;border-left-color:var(--miss)"><b>${esc(ui.restore.name)}</b><br>${ui.restore.n} workout${ui.restore.n===1?'':'s'}${ui.restore.last?', the latest on '+esc(fmtDate(ui.restore.last)):''}. Restoring replaces everything currently in the app.
+      <div class="btns" style="margin:8px 0 0"><button class="btn" data-a="fcancel">Cancel</button><button class="btn danger" data-a="frestore">Restore</button></div></div>`:''}
     ${ui.impMsg?`<p class="muted impmsg" role="alert" style="margin:8px 0 0">${esc(ui.impMsg)}</p>`:''}</div>
   <p class="muted" style="text-align:center">App version <span id="ver">${esc(VER)}</span></p>`;
 }
@@ -754,10 +753,9 @@ function swap(arr,i,j){ if(j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],a
 document.addEventListener('click',ev=>{
   const el=ev.target.closest('[data-a]'); if(!el) return;
   unlockAudio();
-  const imp=$('#imp'); if(imp) ui.imp=imp.value; // re-render below would wipe the pasted text
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.cal=null; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.restore=null; ui.cal=null; break;
     case 'cal': ui.cal+=+d.d; break;
     case 'calday': ui.flashDay=d.k; break;
     case 'start': {
@@ -823,16 +821,11 @@ document.addEventListener('click',ev=>{
     case 'exnew': { const id=uid(); S.ex.push({id,name:'New exercise',rule:'linear',sets:3,reps:8,steps:[8,10,12],inc:5,start:45,bar:0,stage0:0}); ui.openEx=id; break; }
     case 'exdel':
       if(keep==='ex'+d.id){ S.ex=S.ex.filter(e=>e.id!==d.id); S.templates.forEach(t=>t.ex=t.ex.filter(i=>i!==d.id)); ui.openEx=null; } else ui.confirm='ex'+d.id; break;
-    case 'copy': { const ta=$('#exp'); try{ navigator.clipboard.writeText(ta.value).catch(()=>{ta.select();}); }catch(e){ ta.select(); } ta.select(); return; }
-    case 'import':
-      if(keep==='import'){
-        let o=null; try{ o=JSON.parse($('#imp').value); }catch(e){}
-        const bad=o==null?'it isn’t backup text':backupProblem(o);
-        // a rejection stays here with the pasted text, so it shows even mid-workout (Today hides toasts then)
-        if(bad) ui.impMsg='That is not a valid backup: '+bad+'. Nothing was changed.';
-        else { applyBackup(o); ui.toast='Backup imported.'; ui.tab='today'; ui.imp=''; ui.impMsg=''; }
-      } else ui.confirm='import';
-      break;
+    case 'fpick': ui.impMsg=''; $('#restorefile').click(); return;
+    case 'fcancel': ui.restore=null; break;
+    case 'frestore': {
+      const r=ui.restore; ui.restore=null; if(!r) break;
+      applyBackup(r.o); ui.toast='Backup restored from '+r.name+'.'; ui.tab='today'; ui.impMsg=''; break; }
     case 'share': shareBackup(); return;
     case 'gsync': G.armed=true; G.found=''; saveG(); syncGist(true); break;
     case 'grestore': if(keep==='grestore'){ restoreGist(); return; } ui.confirm='grestore'; break;
@@ -881,6 +874,18 @@ document.addEventListener('change',ev=>{
       if(sizes.length){ S.settings.plates=sizes; if(Object.keys(cnt).length) S.settings.plateCount=cnt; else delete S.settings.plateCount; }
       break; }
     case 'theme': S.settings.theme=v; applyTheme(); break;
+    case 'restorefile': { // check the file, then ask before replacing anything
+      const f=el.files&&el.files[0]; el.value=''; if(!f) return;
+      ui.restore=null;
+      if(f.size>20e6){ ui.impMsg='That file is too big to be a Lift backup. Nothing was changed.'; break; }
+      f.text().then(text=>{
+        let o=null; try{ o=JSON.parse(text); }catch(e){}
+        const bad=o==null?'it isn\u2019t a backup file':backupProblem(o);
+        if(bad) ui.impMsg='That file is not a valid backup: '+bad+'. Nothing was changed.';
+        else ui.restore={o,name:f.name,n:o.sessions.length,last:o.sessions.reduce((m,x)=>Math.max(m,x.date),0)};
+        render();
+      }).catch(()=>{ ui.impMsg='Couldn\u2019t read that file. Nothing was changed.'; render(); });
+      return; }
     case 'gtoken': if(v.trim()){ G.token=v.trim(); G.id=''; G.armed=false; G.err=''; G.found=''; saveG(); connectGist(); } break;
     case 'ex': {
       const ex=getEx(d.id), k=d.k; if(!ex) break;

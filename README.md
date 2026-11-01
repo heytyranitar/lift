@@ -15,8 +15,8 @@ Everything is in `index.html` (markup, styles, app code) plus `sw.js` (offline s
 ## Backup
 - **Auto backup to a GitHub Gist.** Create a classic token with only the `gist` scope (GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)) and paste it under Settings → Auto backup. The app writes a secret gist named `lift-backup.json` after each workout and when you leave the app with unsaved changes; failures retry later. Secret gists are unlisted, not private.
 - **Restore** on a new phone: paste the same token, then Restore from Gist. A fresh install that finds an existing backup never overwrites it until you restore or tap Back up now.
-- The token is stored on the phone under its own key (`lift.gist`) and is never included in exports or the gist.
-- **Manual:** Export (copy text or save a file) and Import (paste) on the Settings tab.
+- The token is stored on the phone under its own key (`lift.gist`) and is never included in backup files or the gist.
+- **Backup file** (Settings): Save backup file (share sheet on phones, a download elsewhere) and Restore from file, which checks the file, shows how many workouts it holds and asks before replacing everything.
 
 Data lives in `localStorage` under `lift.v1`. The in-progress workout (`active`) is left out of backups.
 
@@ -35,4 +35,4 @@ npm install
 npx playwright install chromium   # first time only
 npm test
 ```
-`tests/run.js` drives the real app in headless Chromium: import, warm-ups, rest timer, notes, deloads and PRs, history editing, Gist backup and restore (GitHub mocked), service-worker updates under HTTP caching, and themes.
+`tests/run.js` drives the real app in headless Chromium: backup files, warm-ups, rest timer, notes, deloads and PRs, history editing, Gist backup and restore (GitHub mocked), service-worker updates under HTTP caching, and themes.

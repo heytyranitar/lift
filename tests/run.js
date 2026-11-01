@@ -65,34 +65,48 @@ const entry = (exId, name, weight, sets, reps = 5) => ({ exId, name, weight, nSe
 const texts = (p, sel) => p.$$eval(sel, els => els.map(e => e.textContent.trim()));
 
 /* ---- tests ---- */
-test('imports a pasted backup (needs the text to survive the confirm tap)', async () => {
-  const { p, errs } = await open();
+// pick a file with "Restore from file": returns the error message, or the confirm panel's text
+async function pickBackup(p, content, name = 'lift-backup.json') {
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'lift-bk-')), name);
+  fs.writeFileSync(f, typeof content === 'string' ? content : JSON.stringify(content));
   await p.click('[data-tab=data]');
-  const s = await state(p); s.settings.rest = 181;
-  await p.fill('#imp', JSON.stringify(s));
-  await p.click('[data-a=import]'); await p.click('[data-a=import]');
-  eq(await p.textContent('.toast'), 'Backup imported.');
-  eq((await state(p)).settings.rest, 181);
-  await p.click('[data-tab=data]'); await p.fill('#imp', 'not json');
-  await p.click('[data-a=import]'); await p.click('[data-a=import]');
-  eq(await p.textContent('.impmsg'), 'That is not a valid backup: it isn’t backup text. Nothing was changed.');
-  eq(await p.inputValue('#imp'), 'not json', 'pasted text kept to fix');
+  await p.setInputFiles('#restorefile', f);
+  await p.waitForSelector('.impmsg, [data-a=frestore]');
+  return (await p.$('.impmsg')) ? p.textContent('.impmsg') : p.$eval('[data-a=frestore]', b => b.closest('.toast').textContent);
+}
+
+test('backup file: save, then restore that file after confirming; Cancel changes nothing', async () => {
+  const { p, errs } = await open();
+  await p.click('[data-a=start][data-t=C]'); await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.click('[data-a=finish]');
+  await p.click('[data-tab=data]');
+  ok(!(await p.$('textarea')), 'no backup text boxes any more');
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-a=share]')]);
+  ok(/^lift-backup-\d{4}-\d\d-\d\d\.json$/.test(dl.suggestedFilename()), 'dated file name: ' + dl.suggestedFilename());
+  const saved = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+  eq(saved, await state(p), 'the file holds everything');
+
+  await withState(p, s => { s.sessions = []; s.settings.rest = 99; }); // the phone has moved on since
+  const panel = await pickBackup(p, fs.readFileSync(await dl.path(), 'utf8'), dl.suggestedFilename());
+  ok(panel.includes(dl.suggestedFilename()) && panel.includes('1 workout, the latest on'), 'confirm shows what is in the file: ' + panel);
+  await p.click('[data-a=fcancel]');
+  eq((await state(p)).sessions.length, 0, 'Cancel: nothing restored');
+  await pickBackup(p, saved);
+  await p.click('[data-a=frestore]');
+  eq(await p.textContent('.toast'), 'Backup restored from lift-backup.json.');
+  eq(await state(p), saved, 'restored exactly');
+  await pickBackup(p, 'not json');
+  eq(await p.textContent('.impmsg'), 'That file is not a valid backup: it isn’t a backup file. Nothing was changed.');
   return errs;
 });
 
-test('import rejects a malformed backup with the reason, and accepts the app\'s own export', async () => {
+test('restore rejects a malformed backup file with the reason, and restores a workout in progress', async () => {
   const { p, errs } = await open();
-  const tryImport = async o => {
-    await p.click('[data-tab=data]'); await p.fill('#imp', JSON.stringify(o));
-    await p.click('[data-a=import]'); await p.click('[data-a=import]');
-    return p.textContent('.impmsg, .toast'); // a rejection shows under the button, success as a toast
-  };
-  // a real export: one finished workout, one in progress with the rest timer running
+  // a real backup: one finished workout, one in progress with the rest timer running
   await p.click('[data-a=start][data-t=C]'); await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.click('[data-a=finish]');
   await p.click('[data-a=start][data-t=A]'); await p.click('[data-a=set][data-e="0"][data-s="0"]');
   await p.fill('#note', 'felt good');
   const good = await state(p);
-  ok(good.sessions.length === 1 && good.active && good.active.rest, 'export has a workout and one in progress');
+  ok(good.sessions.length === 1 && good.active && good.active.rest, 'backup has a workout and one in progress');
 
   const broken = [
     [s => { delete s.sessions[0].entries; }, 'workout 1 (Workout C) has no exercises'],
@@ -101,23 +115,23 @@ test('import rejects a malformed backup with the reason, and accepts the app\'s 
     [s => { s.templates[0].ex = 'squat'; }, 'workout template 1 (Workout A) is invalid'],
     [s => { s.active.entries[0].weight = null; }, 'the workout in progress: Squat has an invalid weight'],
     [s => { s.settings.plates = '45,25'; }, 'its plate list is invalid'],
+    [s => { s.settings.plateCount = { 45: 'four' }; }, 'its plate counts are invalid'],
     [s => { s.ex = null; }, 'it has no exercises, templates or workouts'],
   ];
   for (const [breakIt, reason] of broken) {
     const bad = JSON.parse(JSON.stringify(good)); bad.sessions[0].note = 'from the bad backup'; breakIt(bad);
-    eq(await tryImport(bad), 'That is not a valid backup: ' + reason + '. Nothing was changed.');
+    eq(await pickBackup(p, bad), 'That file is not a valid backup: ' + reason + '. Nothing was changed.');
     eq(await state(p), good, 'nothing changed after: ' + reason);
   }
   await p.click('[data-tab=hist]');
   ok((await texts(p, '.name')).includes('Workout C'), 'History still renders');
 
-  good.sessions[0].note = 'imported';
-  await p.click('[data-tab=data]'); await p.fill('#imp', JSON.stringify(good));
-  await p.click('[data-a=import]'); await p.click('[data-a=import]');
-  eq(await state(p), good, 'own export imported as is');
+  good.sessions[0].note = 'restored';
+  await pickBackup(p, good); await p.click('[data-a=frestore]');
+  eq(await state(p), good, 'restored as is');
   ok(await p.isVisible('#note'), 'back on the workout in progress');
   await p.click('[data-tab=hist]');
-  ok((await p.textContent('.snote')) === 'imported', 'imported workout shows in History');
+  ok((await p.textContent('.snote')) === 'restored', 'restored workout shows in History');
   return errs;
 });
 
@@ -272,10 +286,9 @@ test('swap when a weight can\'t be loaded: options keep the volume close, and pr
   ok((await texts(p, '.line')).includes('Bench press195 · 5×5'), 'next target builds on 190 (the plan), not 185');
   await p.click('[data-tab=hist]');
   ok((await texts(p, '.line')).some(x => x.startsWith('Bench press 185 (for 190 5×5)')), 'history notes the swap');
-  // the app's own export, swap and plate settings included, imports cleanly
-  await p.click('[data-tab=data]'); const exp = await p.inputValue('#exp');
-  await p.fill('#imp', exp); await p.click('[data-a=import]'); await p.click('[data-a=import]');
-  eq(await p.textContent('.toast'), 'Backup imported.');
+  // a backup with the swap and plate settings restores cleanly
+  await pickBackup(p, await state(p)); await p.click('[data-a=frestore]');
+  eq(await p.textContent('.toast'), 'Backup restored from lift-backup.json.');
   return errs;
 });
 
