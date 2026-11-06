@@ -135,6 +135,20 @@ button.cal-d{color:var(--ink)}
 .chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 14px;min-height:36px;font-weight:600;font-size:14px;color:var(--muted)}
 .chip.on{background:var(--soft);color:var(--ink);border-color:var(--accent)}
 .rng button:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;width:100%;padding:12px 0;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.lrow:first-of-type{border-top:0}
+.lrow .name{font-size:20px}
+.lrow .muted{text-align:right;font-variant-numeric:tabular-nums}
+.lrow .stall{color:var(--miss)}
+.lrow .goal{display:block;font-size:13px;text-align:left;margin-top:2px}
+.lrow:focus-visible,.review:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lopen{padding-bottom:12px}
+.ins{margin:10px 0 0;padding:2px 0 2px 10px;border-left:3px solid var(--accent)}
+.review{display:block;width:calc(100% - 24px);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.tile b{display:block;font:700 28px/1.1 var(--head);font-variant-numeric:tabular-nums}
+.tile.wide{grid-column:1/-1}
 .chead{margin-top:10px}.chead b{font:700 34px/1 var(--head);font-variant-numeric:tabular-nums}
 .chart{touch-action:manipulation}
 @media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}
@@ -155,6 +169,7 @@ button.cal-d{color:var(--ink)}
 <nav class="tabs">
   <button class="tab" data-a="tab" data-tab="today">Today</button>
   <button class="tab" data-a="tab" data-tab="hist">History</button>
+  <button class="tab" data-a="tab" data-tab="prog">Progress</button>
   <button class="tab" data-a="tab" data-tab="plan">Plan</button>
   <button class="tab" data-a="tab" data-tab="data">Settings</button>
 </nav>
@@ -225,6 +240,7 @@ function entryProblem(e){
   if(!isCount(e.nSets)||!isAmt(e.reps)) return 'has an invalid set or rep count';
   if(!Array.isArray(e.sets)||!e.sets.every(r=>r==null||isCount(r))) return 'has invalid set results';
   if(e.wd!=null&&!Array.isArray(e.wd)) return 'has invalid warm-ups';
+  if(e.at!=null&&!(Array.isArray(e.at)&&e.at.every(x=>x==null||isNum(x)))) return 'has invalid set times';
   if(e.swap!=null&&!(isObj(e.swap)&&isAmt(e.swap.w)&&isCount(e.swap.n)&&isAmt(e.swap.r))) return 'has an invalid swap';
   return '';
 }
@@ -235,7 +251,7 @@ function backupProblem(o){
     const p=!isObj(x)?'is not an object':!isStr(x.id)||!isStr(x.name)||!isStr(x.rule)?'has no id, name or progression'
       :!isCount(x.sets)?'needs a whole number of sets':![x.reps,x.inc,x.start,x.bar].every(isAmt)?'has an invalid reps, increment, start or bar weight'
       :!Array.isArray(x.steps)||!x.steps.every(isAmt)?'has invalid rep steps':x.stage0!=null&&!isCount(x.stage0)?'has an invalid starting step'
-      :x.override!=null&&!isAmt(x.override)?'has an invalid next weight':x.warm!=null&&!isStr(x.warm)?'has an invalid warm-up setting':'';
+      :x.override!=null&&!isAmt(x.override)?'has an invalid next weight':x.goal!=null&&!isAmt(x.goal)?'has an invalid goal weight':x.warm!=null&&!isStr(x.warm)?'has an invalid warm-up setting':'';
     if(p) return named('exercise',i,x)+' '+p;
   }
   for(const [i,t] of o.templates.entries())
@@ -531,7 +547,8 @@ async function restNote(kind){
 function setDone(d){
   const a=S.active, e=a&&d&&a.start===d.w&&a.entries[d.e];
   if(!e||e.exId!==d.ex||e.sets[d.s]!==null) return; // another workout's notification, or the set was logged meanwhile
-  e.sets[d.s]=e.reps; startRest(false,isNum(d.at)&&d.at<=Date.now()?d.at:Date.now());
+  const t=isNum(d.at)&&d.at<=Date.now()?d.at:Date.now();
+  e.sets[d.s]=e.reps; (e.at=e.at||[])[d.s]=t; startRest(false,t);
   a.rest=R; syncRest(); save(); render();
 }
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.setDone) setDone(ev.data.setDone); });
@@ -550,7 +567,7 @@ function vToday(){
   const last=[...S.sessions].reverse().find(s=>s.tid==='A'||s.tid==='B');
   const nxt=last&&last.tid==='A'?'B':'A';
   let h='';
-  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.pr?`<div class="pr">${esc(ui.pr)}</div>`:''}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}${ui.toastShare&&ui.bkMsg?`<div class="muted bkmsg" role="status" style="margin-top:6px">${esc(ui.bkMsg)}</div>`:''}</div>`;
+  if(ui.toast) h+=`<div class="toast">${esc(ui.toast)}${ui.pr?`<div class="pr">${esc(ui.pr)}</div>`:''}${ui.newInsight?'<div class="muted" style="margin-top:4px">New insight in Progress.</div>':''}${ui.toastSync?'<div class="muted gstat" style="margin-top:4px">'+esc(gistStatus())+'</div>':''}${ui.toastShare?'<button class="btn sm" data-a="share" style="margin-top:8px">Save backup file</button>':''}${ui.toastShare&&ui.bkMsg?`<div class="muted bkmsg" role="status" style="margin-top:6px">${esc(ui.bkMsg)}</div>`:''}</div>`;
   h+='<h1>Start workout</h1>';
   for(const t of S.templates){
     const lines=t.ex.map(id=>{const ex=getEx(id); if(!ex) return ''; const n=nextTarget(ex);
@@ -660,14 +677,133 @@ function calHtml(){
   }
   return h+'</div></div>';
 }
+/* ---- Progress tab: a row per lift (pace, goal, stalls; tap for its chart), insights, and a seasonal year in review ---- */
+const DAY=864e5, WEEK=7*DAY;
+const plannedW=e=>e.swap?e.swap.w:e.weight; // what progression was aiming for (a swap stands in for it)
+function liftLog(exId){
+  const out=[]; for(const s of S.sessions) for(const e of s.entries) if(e.exId===exId) out.push({d:s.date,w:plannedW(e),e1:entryBest(e).e1});
+  return out.sort((a,b)=>a.d-b.d);
+}
+// least-squares slope of the weight over the last 8 weeks, in lb per week; null without enough to go on
+function pace(log,now){
+  const p=log.filter(x=>x.d>=now-8*WEEK); if(p.length<3||p[p.length-1].d-p[0].d<14*DAY) return null;
+  const mx=p.reduce((a,x)=>a+x.d,0)/p.length, my=p.reduce((a,x)=>a+x.w,0)/p.length;
+  let num=0,den=0; for(const x of p){ num+=(x.d-mx)*(x.w-my); den+=(x.d-mx)**2; }
+  return den?num/den*WEEK:null;
+}
+// no new high in 4 weeks (estimated 1RM for double progression, whose weight only rises in steps)
+function stalled(ex,log,now){
+  if(ex.rule==='hold') return false;
+  const k=ex.rule==='double'?'e1':'w', recent=log.filter(x=>x.d>=now-4*WEEK), before=log.filter(x=>x.d<now-4*WEEK);
+  return recent.length>=3&&before.length>0&&Math.max(...recent.map(x=>x[k]))<=Math.max(...before.map(x=>x[k]))+.5;
+}
+function liftSummary(ex,now){
+  const log=liftLog(ex.id), cur=log[log.length-1].w;
+  const stall=stalled(ex,log,now), pc=ex.rule==='hold'||stall?null:pace(log,now);
+  const right=stall?'<span class="stall">no gain in 4 wks</span>':pc!=null&&Math.abs(pc)>=.05?(pc>0?'+':'\u2212')+Math.abs(pc).toFixed(1)+' lb/wk':'';
+  let goal='';
+  if(ex.goal>0){
+    if(cur>=ex.goal) goal='Goal '+fw(ex.goal)+' reached';
+    else if(pc>.05&&(ex.goal-cur)/pc<=104){
+      const at=new Date(now+(ex.goal-cur)/pc*WEEK), sameYear=at.getFullYear()===new Date(now).getFullYear();
+      goal='Goal '+fw(ex.goal)+' by '+at.toLocaleDateString(undefined,sameYear?{month:'short',day:'numeric'}:{month:'short',year:'numeric'});
+    } else goal='Goal '+fw(ex.goal);
+  }
+  return {cur,right,goal};
+}
+
+/* insights: patterns in which sets you make, shown only when the data clearly backs them */
+const INSIGHT_MIN=30; // workouts before any insight shows
+const doneSets=e=>e.sets.map((v,j)=>({made:v!=null&&v>=e.reps,j,at:e.at&&e.at[j]})).filter((x,j)=>e.sets[j]!=null);
+const madeRate=xs=>xs.filter(x=>x.made).length/xs.length, pct=x=>Math.round(x*100)+'%';
+function insights(){
+  const out=[], ss=[...S.sessions].sort((a,b)=>a.date-b.date);
+  // recovery: sets made with under 2 days since the same lift, versus more
+  const last={}, short=[], long=[];
+  for(const s of ss) for(const e of s.entries){ const prev=last[e.exId]; if(prev!=null) (s.date-prev<2*DAY?short:long).push(...doneSets(e)); last[e.exId]=s.date; }
+  if(short.length>=30&&long.length>=30){ const a=madeRate(short), b=madeRate(long);
+    if(Math.abs(b-a)>=.1) out.push({k:'recovery',v:Math.abs(b-a),t:b>a?`With 2+ days since the same lift you make ${pct(b)} of sets; with less rest, ${pct(a)}.`:`You make more sets (${pct(a)}) when a lift comes back within 2 days than after a longer gap (${pct(b)}).`}); }
+  // time of day the workout started
+  const buckets={morning:[],afternoon:[],evening:[]}, count={morning:0,afternoon:0,evening:0};
+  for(const s of ss){ const h=new Date(s.start||s.date).getHours(), b=h<12?'morning':h<17?'afternoon':'evening'; count[b]++; for(const e of s.entries) buckets[b].push(...doneSets(e)); }
+  const ok=Object.keys(buckets).filter(b=>count[b]>=8&&buckets[b].length>=30).map(b=>({b,r:madeRate(buckets[b])})).sort((x,y)=>y.r-x.r);
+  if(ok.length>=2&&ok[0].r-ok[ok.length-1].r>=.1){ const hi=ok[0], lo=ok[ok.length-1], cap=x=>x[0].toUpperCase()+x.slice(1);
+    out.push({k:'time',v:hi.r-lo.r,t:`${cap(hi.b)} workouts: ${pct(hi.r)} of sets made. ${cap(lo.b)}: ${pct(lo.r)}.`}); }
+  // which set you miss: misses bunched on the last two sets point at fatigue or rest, not strength
+  let best=null;
+  for(const ex of S.ex){
+    let miss=0, late=0, n={}; for(const s of ss) for(const e of s.entries) if(e.exId===ex.id&&e.nSets>=3){ n[e.nSets]=(n[e.nSets]||0)+1;
+      e.sets.forEach((v,j)=>{ if(v!=null&&v<e.reps){ miss++; if(j>=e.nSets-2) late++; } }); }
+    const share=miss?late/miss:0;
+    if(miss>=8&&share>=.7&&(!best||miss>best.miss)){ const ns=+Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; best={miss,share,t:`${ex.name}: ${late} of ${miss} missed sets are the last two (sets ${ns-1}\u2013${ns}). A longer rest before them may help.`}; }
+  }
+  if(best) out.push({k:'lateMiss',v:best.share-.5,t:best.t});
+  // time between work sets (recorded since lift-v39)
+  const quick=[], slow=[];
+  for(const s of ss) for(const e of s.entries){ const xs=doneSets(e).filter(x=>isNum(x.at));
+    for(let i=1;i<xs.length;i++){ const gap=(xs[i].at-xs[i-1].at)/1000; if(gap<150) quick.push(xs[i]); else if(gap>=240&&gap<1200) slow.push(xs[i]); } }
+  if(quick.length>=20&&slow.length>=20){ const a=madeRate(quick), b=madeRate(slow);
+    if(b-a>=.1) out.push({k:'gap',v:b-a,t:`With 4+ minutes between work sets you make ${pct(b)} of them; under 2\u00bd minutes, ${pct(a)}.`}); }
+  return out.sort((x,y)=>y.v-x.v).slice(0,3);
+}
+const shownInsights=()=>S.sessions.length>=INSIGHT_MIN?insights():[];
+
+/* year in review: from mid-December through January */
+function reviewYear(now){ const d=new Date(now), m=d.getMonth(); return m===11&&d.getDate()>=15?d.getFullYear():m===0?d.getFullYear()-1:null; }
+function yearStats(y){
+  const all=[...S.sessions].sort((a,b)=>a.date-b.date), yr=s=>new Date(s.date).getFullYear(), ss=all.filter(s=>yr(s)===y);
+  if(!ss.length) return null;
+  let vol=0, sets=0, time=0, prs=0; const top={}, first={}, lastW={}, months=Array(12).fill(0), weeks=new Set();
+  for(const s of all){
+    const inY=yr(s)===y;
+    for(const e of s.entries){
+      const h=entryBest(e).heavy; if(inY&&top[e.exId]!=null&&h>top[e.exId]) prs++; top[e.exId]=Math.max(top[e.exId]||0,h);
+      if(!inY) continue;
+      for(const v of e.sets) if(v>0){ vol+=v*e.weight; sets++; }
+      if(first[e.exId]==null) first[e.exId]=plannedW(e); lastW[e.exId]=plannedW(e);
+    }
+    if(inY){ time+=s.dur||0; months[new Date(s.date).getMonth()]++; weeks.add(Math.floor((s.date+4*DAY)/WEEK)); } // weeks start Monday
+  }
+  let streak=0, run=0, prev=null; for(const w of [...weeks].sort((a,b)=>a-b)){ run=prev!=null&&w===prev+1?run+1:1; streak=Math.max(streak,run); prev=w; }
+  let gain=null; for(const id in first){ const g=lastW[id]-first[id], ex=getEx(id); if(ex&&g>0&&(!gain||g>gain.g)) gain={g,name:ex.name,from:first[id],to:lastW[id]}; }
+  const bm=months.indexOf(Math.max(...months));
+  return {n:ss.length,vol,sets,time,prs,streak,gain,month:new Date(y,bm,1).toLocaleDateString(undefined,{month:'long'}),monthN:months[bm]};
+}
+const big=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?Math.round(n/1e3)+'k':Math.round(n).toLocaleString();
+function vReview(y){
+  const r=yearStats(y), tile=(b,l,w)=>`<div class="tile${w?' wide':''}"><b>${b}</b><span class="muted">${l}</span></div>`;
+  let h=`<div class="btns" style="margin-top:16px"><button class="btn" data-a="review" style="flex:none">\u2039 Progress</button></div><h1>Your ${y}</h1><div class="tiles">`;
+  h+=tile(r.n,'workouts')+tile(Math.round(r.time/36e5),'hours training');
+  h+=tile(big(r.vol)+' lb','lifted, about '+Math.max(1,Math.round(r.vol/4000)).toLocaleString()+' cars\u2019 worth',true);
+  h+=tile(r.sets.toLocaleString(),'work sets')+tile(r.prs,r.prs===1?'PR':'PRs');
+  h+=tile(r.streak+' wk'+(r.streak===1?'':'s'),'longest streak')+tile(esc(r.month),r.monthN+' workouts, your busiest month');
+  if(r.gain) h+=tile(esc(r.gain.name),'biggest gain: '+fw(r.gain.from)+' \u2192 '+fw(r.gain.to)+' lb',true);
+  return h+'</div>';
+}
+function vProg(){
+  const now=Date.now(), y=reviewYear(now), yr=y!=null&&yearStats(y);
+  if(ui.review&&yr) return vReview(y);
+  ui.review=false;
+  const lifts=S.ex.filter(e=>hasLogged(e.id));
+  if(!lifts.length) return '<div class="empty">Finish a workout to see your progress here.</div>';
+  let h='';
+  if(yr) h+=`<button class="card review" data-a="review"><div class="row"><div class="name">Your ${y} in lifting</div><span class="muted">\u203a</span></div><div class="muted">${yr.n} workouts \u00b7 ${big(yr.vol)} lb lifted</div></button>`;
+  h+='<div class="card">';
+  for(const ex of lifts){
+    const sm=liftSummary(ex,now), open=ui.open===ex.id;
+    h+=`<button class="lrow" data-a="lift" data-id="${ex.id}" aria-expanded="${open}"><span><span class="name">${esc(ex.name)}</span> ${fw(sm.cur)}${sm.goal?`<span class="goal muted">${esc(sm.goal)}</span>`:''}</span><span class="muted">${sm.right}</span></button>`;
+    if(open) h+=`<div class="lopen">${progressHtml(ex.id)}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> \u00b7 Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ex.id))}</div>`;
+  }
+  h+='</div><div class="card"><div class="name">Insights</div>';
+  const n=S.sessions.length, ins=shownInsights();
+  if(n<INSIGHT_MIN) h+=`<p class="muted" style="margin:8px 0 0">Insights unlock after ${INSIGHT_MIN} workouts (${n} so far).</p>`;
+  else if(!ins.length) h+='<p class="muted" style="margin:8px 0 0">No clear patterns yet. Insights appear here when your data shows one.</p>';
+  else h+=ins.map(x=>`<p class="ins">${esc(x.t)}</p>`).join('');
+  return h+'</div>';
+}
 function vHist(){
   if(!S.sessions.length) return '<div class="empty">No workouts yet. Finish one and it shows up here.</div>';
   let h=calHtml();
-  const withData=S.ex.filter(e=>hasLogged(e.id));
-  if(withData.length){
-    if(!withData.find(e=>e.id===ui.chart)) ui.chart=withData[0].id;
-    h+=`<div class="card"><select data-f="chart">${withData.map(e=>`<option value="${e.id}" ${e.id===ui.chart?'selected':''}>${esc(e.name)}</option>`).join('')}</select>${progressHtml(ui.chart)}${(b=>`<div class="muted stats">Heaviest: <b>${fw(b.heavy)} lb</b> · Best est. 1RM: <b>${Math.round(b.e1)} lb</b></div>`)(bests(ui.chart))}</div>`;
-  }
   h+='<div class="card">';
   for(const s of [...S.sessions].reverse()){
     h+=`<div class="sess${ui.flashDay&&dayKey(s.date)===ui.flashDay?' flash':''}"><div class="row"><div class="name">${esc(s.name)}</div><span class="muted">${fmtDate(s.date)}${s.dur?' · '+fmtMin(s.dur):''}</span></div>`;
@@ -713,6 +849,7 @@ function vPlan(){
       h+=`<div class="field"><label>Warm-up sets</label><select data-f="ex" data-id="${ex.id}" data-k="warm">
         <option value="auto" ${warmMode(ex)==='auto'?'selected':''}>Auto (bar, then 40/60/80%)</option><option value="light" ${warmMode(ex)==='light'?'selected':''}>One light set (60% ×5)</option><option value="off" ${warmMode(ex)==='off'?'selected':''}>Off</option></select></div>`;
       h+=f('Next weight','override',fw(n.weight));
+      h+=f('Goal weight (optional)','goal',ex.goal==null?'':fw(ex.goal));
       h+=`<button class="btn sm danger" data-a="exdel" data-id="${ex.id}" style="margin-top:6px">${ui.confirm==='ex'+ex.id?'Tap again to delete':'Delete exercise'}</button>`;
     }
     h+='</div>';
@@ -749,7 +886,7 @@ function vData(){
   <p class="muted" style="text-align:center">App version <span id="ver">${esc(VER)}</span></p>`;
 }
 function render(){
-  const v={today:vToday,hist:vHist,plan:vPlan,data:vData}[ui.tab]();
+  const v={today:vToday,hist:vHist,prog:vProg,plan:vPlan,data:vData}[ui.tab]();
   $('#view').innerHTML=v; ui.fresh='';
   const fl=ui.flashDay&&$('.sess.flash'); ui.flashDay='';
   if(fl) fl.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
@@ -764,7 +901,7 @@ document.addEventListener('click',ev=>{
   unlockAudio();
   const d=el.dataset, keep=ui.confirm; ui.confirm='';
   switch(d.a){
-    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.bkMsg=''; ui.restore=null; ui.cal=null; break;
+    case 'tab': ui.tab=d.tab; ui.toast=''; ui.pr=''; ui.editSess=null; ui.toastSync=ui.toastShare=false; ui.impMsg=''; ui.bkMsg=''; ui.restore=null; ui.cal=null; ui.review=false; ui.newInsight=false; break;
     case 'cal': ui.cal+=+d.d; break;
     case 'calday': ui.flashDay=d.k; break;
     case 'start': {
@@ -777,6 +914,8 @@ document.addEventListener('click',ev=>{
     case 'cplot': { // tap the chart: select the workout nearest the tap
       const r=el.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width*CHART.W, xs=el.dataset.xs.split(',').map(Number);
       ui.csel=xs.reduce((b,v,i)=>Math.abs(v-x)<Math.abs(xs[b]-x)?i:b,0); break; }
+    case 'lift': ui.open=ui.open===d.id?null:d.id; ui.csel=null; break;
+    case 'review': ui.review=!ui.review; window.scrollTo(0,0); break;
     case 'hedit': ui.editSess=d.id; break;
     case 'hdone': ui.editSess=null; break;
     case 'wset': {
@@ -788,15 +927,16 @@ document.addEventListener('click',ev=>{
     case 'set': {
       const e=S.active.entries[+d.e], j=+d.s, cur=e.sets[j];
       const nv=cur==null?e.reps:(cur>0?cur-1:null); e.sets[j]=nv;
+      if(cur==null) (e.at=e.at||[])[j]=Date.now(); else if(nv==null&&e.at) e.at[j]=null; // when each set was done
       if(cur==null){ startRest(false); ui.fresh=d.e+'-'+j; } // lets a theme animate the set just completed
       else if(cur>=e.reps&&nv!=null&&nv<e.reps) startRest(true,R&&R.start); // set just became a miss
       break; }
     case 'swap': {
       const e=S.active.entries[+d.e], ex=getEx(e.exId), o=ex&&swapOptions(e,ex)[+d.k]; if(!o) break;
-      e.swap={w:e.weight,n:e.nSets,r:e.reps}; e.weight=o.w; e.nSets=o.n; e.reps=o.r; e.sets=Array(o.n).fill(null); e.wd=[]; break; }
+      e.swap={w:e.weight,n:e.nSets,r:e.reps}; e.weight=o.w; e.nSets=o.n; e.reps=o.r; e.sets=Array(o.n).fill(null); e.wd=[]; delete e.at; break; }
     case 'unswap': {
       const e=S.active.entries[+d.e]; if(!e.swap||e.sets.some(v=>v!=null)) break;
-      e.weight=e.swap.w; e.nSets=e.swap.n; e.reps=e.swap.r; e.sets=Array(e.nSets).fill(null); e.wd=[]; delete e.swap; break; }
+      e.weight=e.swap.w; e.nSets=e.swap.n; e.reps=e.swap.r; e.sets=Array(e.nSets).fill(null); e.wd=[]; delete e.swap; delete e.at; break; }
     case 'w': { const e=S.active.entries[+d.e], ex=getEx(e.exId); e.weight=Math.max(0,fw(e.weight+(+d.d)*(ex?ex.inc:5))); break; }
     case 'r30': if(R){R.end=Math.max(R.end,Date.now())+30000;R.done=false;R.warned=false;} break;
     case 'rskip': R=null; break;
@@ -813,9 +953,11 @@ document.addEventListener('click',ev=>{
           if(cur.heavy>prev.heavy) prs.push(e.name+' '+fw(cur.heavy)+' lb');
           else if(cur.e1>prev.e1+0.5) prs.push(e.name+' est. 1RM '+Math.round(cur.e1)+' lb'); }
         ui.pr=prs.length?'New PR: '+prs.join(', '):'';
+        const had=new Set(shownInsights().map(x=>x.k));
         const sess={id:uid(),date:Date.now(),start:a.start,dur,tid:a.tid,name:t?t.name:'Workout',entries};
         if((a.note||'').trim()) sess.note=a.note.trim();
         S.sessions.push(sess);
+        ui.newInsight=shownInsights().some(x=>!had.has(x.k));
         entries.forEach(e=>{const ex=getEx(e.exId); if(ex) delete ex.override;});
         ui.toast='Saved '+(t?t.name:'workout')+' ('+fmtMin(dur)+'). Targets are updated for next time.';
         if(G.token&&G.armed){ ui.toastSync=true; S.active=null; save(); syncGist(); } else ui.toastShare=true;
@@ -856,12 +998,11 @@ document.addEventListener('change',ev=>{
   if(d.f==='hw'||d.f==='hset'){
     const s=S.sessions.find(x=>x.id===d.sid), e=s&&s.entries[+d.e]; if(!e) return;
     if(d.f==='hw'){ const n=parseFloat(v); if(!isNaN(n)&&n>=0) e.weight=n; }
-    else { const n=parseInt(v,10); e.sets[+d.s]=v===''?null:(n>=0?n:e.sets[+d.s]); }
+    else { const n=parseInt(v,10); e.sets[+d.s]=v===''?null:(n>=0?n:e.sets[+d.s]); if(e.sets[+d.s]==null&&e.at) e.at[+d.s]=null; }
     save(); return;
   }
   switch(d.f){
     case 'w': { const n=parseFloat(v); if(!isNaN(n)&&n>=0) S.active.entries[+d.e].weight=n; break; }
-    case 'chart': ui.chart=v; ui.csel=null; break;
     case 'wake': S.settings.wake=v==='1'; break;
     case 'notify':
       ui.notifyMsg='';
@@ -902,6 +1043,7 @@ document.addEventListener('change',ev=>{
       else if(k==='rule') ex.rule=v;
       else if(k==='warm') ex.warm=v;
       else if(k==='steps'){ const s=v.split(',').map(x=>parseInt(x,10)).filter(x=>x>0); if(s.length) ex.steps=s; }
+      else if(k==='goal'){ const n=parseFloat(v); if(v.trim()==='') delete ex.goal; else if(!isNaN(n)&&n>0) ex.goal=n; }
       else if(k==='override'){ const n=parseFloat(v); if(!isNaN(n)&&n>=0) ex.override=n; }
       else { const n=parseFloat(v); if(!isNaN(n)&&n>=0) ex[k]=n; }
       break; }

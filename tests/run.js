@@ -244,7 +244,7 @@ test('progress chart: ranges, weight / est. 1RM, tap to select a workout', async
   const { p, errs } = await open();
   const weights = [[400, 135], [200, 145], [120, 155], [70, 165], [20, 175], [5, 185]];
   await withState(p, s => { s.sessions = weights.map(([d, w]) => session(d, [entry('squat', 'Squat', w, [5, 5, 5])])); });
-  await p.click('[data-tab=hist]');
+  await p.click('[data-tab=prog]'); await p.click('[data-a=lift][data-id=squat]'); // the chart is under the lift's row in Progress
   const dots = () => p.$$eval('svg.chart circle.pt', c => c.length);
   const head = () => p.textContent('.chead');
   eq(await p.$$eval('.rng button', b => b.map(x => x.textContent)), ['1M', '3M', '6M', '1Y', 'All']);
@@ -265,7 +265,7 @@ test('progress chart: ranges, weight / est. 1RM, tap to select a workout', async
   eq(await p.$eval('.chip.on', b => b.textContent), 'Est. 1RM');
   // a single workout in range gives a message, not a chart
   await withState(p, s => { s.sessions = [session(5, [entry('squat', 'Squat', 185, [5, 5, 5])])]; });
-  await p.click('[data-tab=hist]');
+  await p.click('[data-tab=prog]'); await p.click('[data-a=lift][data-id=squat]'); // the chart is under the lift's row in Progress
   ok((await p.textContent('.rng + .muted')).includes('Only one workout in this range'), 'one workout: message instead of a chart');
   ok((await p.textContent('.stats')).startsWith('Heaviest: '), 'best-lifts line still shown');
   return errs;
@@ -319,6 +319,98 @@ test('swap when a weight can\'t be loaded: options keep the volume close, and pr
   return errs;
 });
 
+test('Progress tab: a row per lift with pace, goal date and stalls; History is just the log', async () => {
+  const { p, errs } = await open();
+  await withState(p, s => {
+    s.sessions = [];
+    for (let k = 7; k >= 0; k--) s.sessions.push(session(k * 7 + 1, [entry('bench', 'Bench press', 185 - k * 5, [5, 5, 5, 5, 5])])); // +5 lb a week
+    for (const d of [40, 20, 12, 3]) s.sessions.push(session(d, [entry('ohp', 'Overhead press', 95, [5, 5, 4, 4, 3])])); // stuck at 95
+    s.sessions.push(session(2, [entry('squat', 'Squat', 185, [5, 5, 5])])); // squat holds its weight
+    s.sessions.sort((x, y) => x.date - y.date);
+  });
+  await p.click('[data-tab=plan]'); await p.click('[data-a=exopen][data-id=bench]');
+  await p.fill('[data-id=bench][data-k=goal]', '225'); await p.press('[data-id=bench][data-k=goal]', 'Tab');
+  await p.click('[data-tab=hist]');
+  ok(!(await p.$('svg.chart')) && !(await p.$('.stats')), 'History no longer has the chart');
+  await p.click('[data-tab=prog]');
+  const rows = await p.$$eval('.lrow', r => r.map(x => [...x.children].map(c => c.textContent.trim())));
+  eq(rows.map(r => r[0].replace(/Goal.*/, '')), ['Squat 185', 'Bench press 185', 'Overhead press 95']);
+  eq(rows[0][1], '', 'hold: no pace');
+  eq(rows[1][1], '+5.0 lb/wk', 'pace');
+  ok(/^Goal 225 by \w+/.test(await p.textContent('[data-id=bench] .goal')), 'goal date: ' + await p.textContent('[data-id=bench] .goal'));
+  eq(rows[2][1], 'no gain in 4 wks');
+  ok(!(await p.$('svg.chart')), 'rows start collapsed');
+  await p.click('[data-a=lift][data-id=bench]');
+  ok(await p.isVisible('svg.chart') && (await p.textContent('.stats')).startsWith('Heaviest: 185 lb'), 'tap opens its chart');
+  await p.click('[data-a=lift][data-id=ohp]');
+  eq(await p.$$eval('svg.chart', c => c.length), 1, 'one lift open at a time');
+  return errs;
+});
+
+test('insights: locked until 30 workouts, then the clearest patterns, and the save message says when one appears', async () => {
+  const { p, errs } = await open();
+  const plant = n => withState(p, s => {
+    s.sessions = [];
+    for (let k = n; k >= 1; k--) {
+      const evening = k % 2 === 0, start = new Date(Date.now() - k * 3 * 864e5); start.setHours(evening ? 19 : 8, 0, 0, 0);
+      const t0 = start.getTime(), gap = evening ? 90e3 : 300e3, at = m => Array.from({ length: m }, (_, j) => t0 + j * gap);
+      const bench = entry('bench', 'Bench press', 150, evening ? [5, 5, 5, 3, 2] : [5, 5, 5, 5, 5]); bench.at = at(5);
+      const squat = entry('squat', 'Squat', 185, [5, 5, 5]); squat.at = at(3).map(x => x + 30 * 60e3);
+      s.sessions.push(session(k * 3, [squat, bench], { id: 'p' + k, start: t0, date: t0 + 50 * 60e3, dur: 50 * 60e3 }));
+    }
+  });
+  await plant(29);
+  await p.click('[data-tab=prog]');
+  eq(await p.textContent('.card:last-child p'), 'Insights unlock after 30 workouts (29 so far).');
+  // the 30th workout, logged in the app: insights unlock and the save message says so
+  await p.click('[data-tab=today]'); await p.click('[data-a=start][data-t=C]'); await p.click('[data-a=set][data-e="0"][data-s="0"]'); await p.click('[data-a=finish]');
+  ok((await p.textContent('.toast')).includes('New insight in Progress.'), 'save message mentions it');
+  await plant(40);
+  await p.click('[data-tab=prog]');
+  const ins = await texts(p, '.ins');
+  eq(ins.length, 3, 'at most three');
+  ok(ins.includes('Bench press: 40 of 40 missed sets are the last two (sets 4–5). A longer rest before them may help.'), ins.join(' | '));
+  ok(ins.includes('Morning workouts: 100% of sets made. Evening: 75%.'), ins.join(' | '));
+  ok(ins.includes('With 4+ minutes between work sets you make 100% of them; under 2½ minutes, 67%.'), ins.join(' | '));
+  return errs;
+});
+
+test('set times: recorded when a set is done, cleared when it is undone, kept with the workout', async () => {
+  const { p, errs } = await open();
+  await p.click('[data-a=start][data-t=A]');
+  const before = Date.now();
+  await p.click('[data-a=set][data-e="0"][data-s="0"]');
+  const at = () => state(p).then(s => s.active.entries[0].at || []);
+  ok((await at())[0] >= before, 'time recorded');
+  for (let i = 0; i < 6; i++) await p.click('[data-a=set][data-e="0"][data-s="0"]'); // 5 → 4 … → 0 → empty
+  eq((await state(p)).active.entries[0].sets[0], null);
+  eq((await at())[0], null, 'cleared with the set');
+  await p.click('[data-a=set][data-e="0"][data-s="1"]'); await p.click('[data-a=finish]');
+  const e = (await state(p)).sessions.at(-1).entries[0];
+  ok(e.at[1] >= before && e.at[0] == null, 'saved with the workout');
+  return errs;
+});
+
+test('year in review: a card from mid-December to January, with the year\'s numbers', async () => {
+  const { p, ctx, errs } = await open();
+  const d = (y, m, day, h = 18) => new Date(y, m, day, h).getTime();
+  const s = (date, w, sets = [5, 5, 5]) => ({ id: 'y' + date, date, start: date - 3600e3, dur: 3600e3, tid: 'A', name: 'Workout A', entries: [entry('bench', 'Bench press', w, sets)] });
+  await withState(p, st => { st.sessions = [s(d(2025, 11, 1), 150), s(d(2026, 2, 2), 155), s(d(2026, 2, 9), 160), s(d(2026, 2, 16), 165), s(d(2026, 5, 1), 160, [5, 5, 4])]; });
+  await ctx.clock.setFixedTime(new Date(2026, 9, 20, 12)); await p.reload(); await p.click('[data-tab=prog]');
+  ok(!(await p.$('.review')), 'no card in October');
+  await ctx.clock.setFixedTime(new Date(2026, 11, 20, 12)); await p.reload(); await p.click('[data-tab=prog]');
+  eq(await p.textContent('.review .name'), 'Your 2026 in lifting');
+  await p.click('.review');
+  const tiles = await p.$$eval('.tile', t => t.map(x => x.textContent));
+  ok(tiles.includes('4workouts') && tiles.includes('3PRs') && tiles.includes('3 wkslongest streak') && tiles.includes('March3 workouts, your busiest month'), tiles.join(' | '));
+  ok(tiles.includes('Bench pressbiggest gain: 155 → 160 lb'), 'gain from the first to the last workout of the year: ' + tiles.join(' | '));
+  await p.click('[data-a=review]');
+  ok(await p.isVisible('.lrow'), 'back to Progress');
+  await ctx.clock.setFixedTime(new Date(2027, 0, 10, 12)); await p.reload(); await p.click('[data-tab=prog]');
+  eq(await p.textContent('.review .name'), 'Your 2026 in lifting', 'still there in January');
+  return errs;
+});
+
 test('workout note: saved as you type, Finish works in one tap, shown in History', async () => {
   const { p, errs } = await open();
   await p.click('[data-a=start][data-t=A]');
@@ -345,8 +437,8 @@ test('deload notice and new-PR message', async () => {
   for (let j = 0; j < 3; j++) await p.click(`[data-a=set][data-e="0"][data-s="${j}"]`);
   await p.click('[data-a=finish]');
   eq(await p.textContent('.toast .pr'), 'New PR: Squat 180 lb');
-  await p.click('[data-tab=hist]');
-  ok((await p.textContent('.stats')).startsWith('Heaviest: '), 'History shows best lifts');
+  await p.click('[data-tab=prog]'); await p.click('[data-a=lift][data-id=squat]'); // the chart is under the lift's row in Progress
+  ok((await p.textContent('.stats')).startsWith('Heaviest: '), 'Progress shows best lifts');
   return errs;
 });
 
